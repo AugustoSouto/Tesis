@@ -1,0 +1,283 @@
+---
+title: "SWAT Santa Lucia Descriptive Statistics"
+author: "Augusto Souto-Perez"
+date: "23/3/2020"
+output: pdf_document
+link-citations: yes
+urlcolor: blue
+linkcolor: blue
+numbersections: yes 
+---
+
+\tableofcontents
+
+\newpage
+  
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      message=FALSE,
+                      warning = FALSE)
+library(tidyverse)
+library(knitr)
+```
+
+```{r, echo=FALSE}
+
+load("C:/SWAT/Corridas_para_markdown.RData")
+```
+
+
+# Area
+
+There are `r area %>% t() %>% length` hidrological response units in the Santa Lucia basin. As we can see in the plot, most of them have an area of 1000 hectares or less. 
+
+```{r cars, echo=FALSE}
+
+ggplot(area %>% t() %>% as.data.frame()  , aes(x=V1*100))+
+  geom_density(fill="#69b3a2", color="green", alpha=0.8)+
+  xlab("Area_hectares")+
+  ylab("Density")
+
+```
+
+The area range varies between aprox `r round((area %>% min)*100, 1)` hectares to `r round((area %>% max)*100, 1)` hectares, with a median of `r round((quantile(area %>% as.data.frame(), probs = c(0.50)))*100, 1)` and a mean of `r round((mean(area %>% as.numeric()))*100, 1)`. According to [Rosas et al. (2011)](cef.org.uy/images/informes/informe%20CalidadAgua_aPublicar.pdf), 78% of the farms in the basin have 100 or less hectares, 19% have a size between 100 and 1000 hectares and the remaining 3% a size above these 1000 hectares. Thus, although the median farm size in the basin is smaller than the median hru, the use of them to represent the farms doesnt seem to be unrealistic. 
+
+```{r, echo=FALSE}
+#stats#
+knitr::kable(area %>% t() %>% as.data.frame() %>% 
+                 summarise(
+                            min=min(V1*100),
+                            p25=quantile(V1*100, probs = c(0.25)),
+                            mean=mean(V1*100, probs = c(0.50)),
+                            median=median(V1*100),
+                            p75=quantile(V1*100, probs = c(0.75)),
+                            max=max(V1*100)
+                            ) %>% as.data.frame(),
+                            
+                           format = "latex",
+                           booktabs=TRUE
+             )  %>%
+                   kableExtra::kable_styling(latex_options = "hold_position")
+                 
+```
+
+
+
+# Land Use 
+
+There are 7 different corn uses: corn, eucalyptus, native forest, oats, pasture, sorghum and soybean. These uses are combined in 7 different land use rotations that distribute the soil use across a 6 years cycle.
+
++ The first rotation is a purely based on pasture, which is used to      feed cattle.
+
++ The second one is a forestry land use based on Eucalyptus.
+
++ The third one alternates between soybean, oats and corn.
+
++ The fourth and fifth rotations are the same, but start at different times. Both are based mainly on pasture with corn and oats as secondary uses.
+
++ The sixth rotation is a pasture rotation with a short period used on oats and sorghum.
+
++ The seventh rotation is a purely native forest land use. 
+
+In the following output, we can observe the different land uses in a given rotation as well as the length in months of these land uses in that rotation. For example, for rotation three, there are three initial months with soybean, followed by 7 months of oats, 5 months of soybean and so on.
+
+
+```{r, echo=FALSE}
+
+#soil use in each rotation
+for (i in colnames(df)) {
+print(i)  
+get("df")[,i] %>% table() %>% print()
+              
+rle(as.vector(get(paste0("df"))[,i])) %>% print()
+}
+
+```
+
+These rotations can be observed in the following graph:
+
+```{r, results='hide', echo=FALSE, message=FALSE  }
+
+
+TraMineR::seqIplot(seq_df, border = NA, with.legend = "right")
+
+
+
+```
+
+Overall, the most extended rotations across the basin are rotation 1, 5 and 5, which are implemented on 318, 162 and 145 HRU's respectively. This means that pasture rotation is the most popular, followed by a mix of pasture and crops and also by an agricultural rotation based on oats in winter and on soybean and corn in the summer. This seems consistent with the SWAT team document, where they explain that soil use is being calibrated using soil use between the coberture maps of the years 2000 and 2008. In these years, pasture and pasture with agriculture were the most spreaded soil uses.
+
+```{r, echo=FALSE}
+#number of hrus with each type of rotation
+n_hru <- matrix(nrow = length(colnames(df)), ncol=1 )
+
+for (i in colnames(df)) {
+
+n_hru[match( i, colnames(df)),1]<-
+         
+    apply(data_hru[,land_use] ,2 ,
+        function(a) {identical(a,as.vector(get(paste0("df"))[,i]))} ) %>%
+       sum 
+  
+  
+}
+rownames(n_hru)<-paste0("rotacion_",seq(1:7))
+n_hru<- n_hru  %>% as.data.frame() %>% rownames_to_column() %>% rename(n_hru=V1) 
+
+knitr::kable(n_hru %>% arrange(desc(n_hru)) %>% t(), format = "latex", booktabs=TRUE) %>% 
+  kableExtra::kable_styling(latex_options = "hold_position")
+
+
+
+```
+
+
+# Phosphorus and Nitrogen Loadings
+
+Phosphorus and Nitrogen loadings to the reachs are analyzed using the SWAT variables TOT_Pkg and TOT_Nkg. Then, using the following formula, we can measure the phosphorus and nitrogen concentration in miligrams per litre:
+
+\begin{equation}
+P_{c}=\frac{TP * 1000000}{Q * 60 * 60 * 24 * 1000 * 30}
+\end{equation}
+
+where: PT is the total phosphorus and Q is the river flow at the  reach level.
+
+## Phosphorus
+
+Results show very high levels of phosphorus concentration, the registered values (almost always) surpass the environmental normative value of 0.025 mg per litre (red line in the plot). Also, we can see that phosphorus concentration grows in time and that values in december, january and february are specially high.
+
+The following graph, shows the evolution of the mean of the simulated phosphorus concentration in all of the 41 reachs. 
+
+```{r, echo=FALSE}
+ggplot(phosphorus_conc_plot, aes(x=date, y=value, group=variable))+
+  geom_line()+
+  theme_bw()+
+  theme(panel.grid=element_blank(), axis.text.x = element_text(angle=90, hjust=1), text = element_text(size=7.5)) +
+  geom_line(size=0.2, alpha=0.1) +
+  geom_hline(yintercept = 0.025, color="red", size=1)
+
+phosphorus_conc_plot %>% mutate(month=lubridate::month(date)) %>% group_by(month) %>% summarise(mean=mean(value)) %>% plot(,col="blue")
+abline(h=0.025, col="red")
+
+```
+
+
+
+## Nitrogen
+
+Nitrogen concentations are also higher than those allowed by the environmental autority, which sets a maximum of 10 mg per litre. Nevertheless, in this case, the situation is not that severe, since there are moments in which the restriction is being met. 
+
+The concentration per litre seem to be worst in the month of july, in which the average value is almost identical to the maximum allowed value of 10 mg/l. We can also see that the last year seems to be catastrophic. Maybe Rafael could explain this.
+
+
+```{r, echo=FALSE}
+ggplot(nitrogen_conc_plot, aes(x=date, y=value, group=variable))+
+  geom_line()+
+  theme_bw()+
+  theme(panel.grid=element_blank(), axis.text.x = element_text(angle=90, hjust=1), text = element_text(size=7.5)) +
+  geom_line(size=0.2, alpha=0.1)+
+  geom_hline(yintercept = 10, color="red", size=1)
+
+nitrogen_conc_plot %>% mutate(month=lubridate::month(date)) %>% group_by(month) %>% summarise(mean=mean(value)) %>% plot(,col="blue")
+abline(h=10, col="red")
+
+```
+
+# Yields
+## First rotation:
+
+As we can see, there are some very productive hrus within the basin. Also, we can see that pasture yields get their maximum values in the months between january and may. Finally, there is not a clear yearly trend in the yield data.
+
+```{r, echo=FALSE}
+#visualize crop yield per rotation
+#rotation 1: very different patterns among hrus, some are very productive
+plot(plot_yield_1) #purely pasture
+yield_df_1  %>%  group_by(month) %>% summarise(mean=mean(value)) %>% plot(,col="blue")
+
+
+yield_df_1  %>% group_by(year) %>% summarise(mean=mean(value)) %>% plot(col="blue")
+```
+
+## Second rotation
+
+The second rotation has similar elements with the first one: there are a few very productive hrus and yields are obtained between november and may. However, in this case, there is a growing yearly trend i the yield data. This must be so because eucalyptus has a longer productive cycle.
+
+```{r, echo=FALSE, message=FALSE,warning=FALSE}
+#rotation 2: there are some very productive hrus but the yield cycle is almost the same across hrus
+plot(plot_yield_2) #purely eucalyptus
+yield_df_2  %>%  group_by(month) %>% summarise(mean=mean(value)) %>% plot(,col="blue")
+
+
+yield_df_2  %>% group_by(year) %>% summarise(mean=mean(value)) %>% plot(col="blue")
+```
+
+## Third rotation
+
+Third rotation is based on soybean, oats and some corn. The shaded areas indicate the land use change between one crop and another. In this case, there is not such an inequality between productive hru, all of them seem to be pretty similar in terms of yields per hectare. On the other side, as expected, the months in which the crop is lifted are january, february and march. In this case there is not a clear yearly pattern on yield growth.
+
+ 
+```{r, echo=FALSE}
+#rotation 3: very similar yields among hrus
+plot(plot_yield_3)
+yield_df_3  %>%  group_by(month) %>% summarise(mean=mean(value)) %>% plot(,col="blue")
+
+
+yield_df_3  %>% group_by(year) %>% summarise(mean=mean(value)) %>% plot(col="blue")
+```
+
+# Fourth rotation
+
+The fourth rotation, as we can see in the first plot yields, is a rotation with corn being followed by pasture land use. Then, we have corn, oats, corn and pasture again until the end of the 72-month period. Because corn is a summer crop, the biggest monthly yield means are in january, february and march. The yearly pattern seems to be a little fuzzy.
+
+
+```{r, echo=FALSE}
+#rotation 4: very similar yields among hrus
+plot(plot_yield_4)
+yield_df_4  %>%  group_by(month) %>% summarise(mean=mean(value)) %>% plot(,col="blue")
+
+
+yield_df_4  %>% group_by(year) %>% summarise(mean=mean(value)) %>% plot(col="blue")
+```
+
+
+# Fifth rotation
+
+The firth rotation identical to rotation 4. The only difference between them is the start date. Hence, we omit the comments.
+
+```{r, echo=FALSE}
+#rotation 4: very similar yields among hrus
+plot(plot_yield_5)
+yield_df_5  %>%  group_by(month) %>% summarise(mean=mean(value)) %>% plot(,col="blue")
+
+
+yield_df_5  %>% group_by(year) %>% summarise(mean=mean(value)) %>% plot(col="blue")
+```
+
+# Sixth rotation
+
+Rotation six is based on pasture, oats and sorghum. As we can see, yield volume have a peak during the sorghum period. In the months of december and january we get the highest mean values in terms of yield. As we expected, yearly pattern is coincident with the years in which sorghum is harvested.
+
+```{r, echo=FALSE}
+#rotation 6: very similar yields among hrus
+plot(plot_yield_6)
+yield_df_6  %>%  group_by(month) %>% summarise(mean=mean(value)) %>% plot(,col="blue")
+
+
+yield_df_6  %>% group_by(year) %>% summarise(mean=mean(value)) %>% plot(col="blue")
+```
+
+# Seventh rotation
+
+This rotation is the only non-commercial rotation in the model, since it is composed by native forest. Yields seem to be higher in december (ask rafael about how can i interpret that) , but doesnt have a clear yearly trend. 
+
+```{r, echo=FALSE}
+#rotation 7: lot of heterogeneity across hrus
+plot(plot_yield_7) #purely native forest
+
+yield_df_7  %>%  group_by(month) %>% summarise(mean=mean(value)) %>% plot(,col="blue")
+
+
+yield_df_7  %>% group_by(year) %>% summarise(mean=mean(value)) %>% plot(col="blue")
+
+```
+
