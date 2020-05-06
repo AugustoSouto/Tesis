@@ -231,7 +231,7 @@ b <- profit_ha_disc %>% apply( 2,median)
 names(b)<-colnames(profit_ha)
 plot(y=b, x=as.Date( names(a)), type = "lines", col="red")
 
-#RESULTS ANALYSIS-----
+#RESULTS ANALYSIS------
 
 #yield variance per rotation
 for (i in 1:7) {
