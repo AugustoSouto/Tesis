@@ -72,6 +72,10 @@ for (i in 1:7) {
       theme(panel.grid=element_blank(), axis.text.x = element_text(angle=90, hjust=1)) +
       geom_line(size=0.2, alpha=0.1)
   )
+  
+  ggsave(paste0("plot_costot_",i,".jpeg") , width = 4, height = 4)
+  
+  
 }
 
 
@@ -148,7 +152,11 @@ profit_ha<-revenue_ha-costos_ha; View(profit_ha)
 #see mean profit per hectare in each productive unit
 #determine if it does make sense
 apply(profit_ha, 1, mean) %>% View()
-apply(profit_ha, 1, mean) %>% plot() 
+apply(profit_ha, 1, mean) %>% summary()
+#seems to be 3 profits: 0 profit, 500usd7ha profit, and 2000usd/ha profit
+apply(profit_ha, 1, mean) %>% density() %>% plot
+apply(profit_ha, 1, mean) %>% plot()
+
 
 #comments on the last plot
 #there is huge heterogeneity in mean profit per hectare
@@ -160,6 +168,12 @@ apply(profit_ha, 1, mean) %>% plot()
 profit_tot <- sapply(1:nrow(profit_ha),function(x) profit_ha[x,] * ar[x] ) %>%
   t() %>% as.data.frame() %>%
   mutate_all(function(x) {as.numeric(x)})  
+
+
+apply(profit_tot, 1, mean) %>% View()
+apply(profit_tot, 1, mean) %>% summary()
+apply(profit_tot, 1, mean) %>% density() %>% plot
+apply(profit_tot, 1, mean) %>% plot()
 
 
 #DISC FACTOR----
@@ -217,40 +231,91 @@ profit_tot_periodo <- profit_tot_disc %>%  apply(1,sum)
 
 #total profit in the basin by month
 profit_tot_month <- apply(profit_tot_disc, 2, sum); plot(profit_tot_month)
+plot(profit_tot_month, type = "line")
+#in march of 2012 max profit is reached
+#in june of 2010 min profit is reached
 
 #total profit by hectare by month
-a <- profit_ha_disc %>% apply( 2,sum)
-names(a)<-colnames(profit_ha)
-
 #plot the basin disc profits per hectare
-options(scipen = 999)
-plot(y=a, x=as.Date( names(a)), type = "lines", col="red")
+profit_ha_disc %>% apply( 2,sum)
+profit_ha_disc %>% apply( 2,sum) %>% plot(type="line", col="red")
 
 #plot the median disc profit per hectare
-b <- profit_ha_disc %>% apply( 2,median)
-names(b)<-colnames(profit_ha)
-plot(y=b, x=as.Date( names(a)), type = "lines", col="red")
+profit_ha_disc %>% apply( 2,median) %>% plot(type="line", col="red")
+
 
 #RESULTS ANALYSIS------
 
 #yield variance per rotation
+#the graph shows the variance across hrus yields in each month
+#the variance also depends on the land use
 for (i in 1:7) {
   rbind(yield_df, rotacion_hru)  %>% 
     t() %>%
     as.data.frame() %>%
     filter(`73`==paste0("rotacion_",i)) %>%
     apply(2,sd) %>%
-    plot(main=paste("yield rotacion ",i,"variacion"))
-}
+    plot(main=paste("yield rotacion ",i,"variance"), type="lines")
+
+#    paste0("yield_rotacion",i,".jpg")
+  }
+
+#see the profit per hectare and its variance by rotation
 
 for (i in 1:7) {
   cbind(profit_ha, rotacion_hru) %>%
     as.data.frame() %>% 
     filter(rotacion_hru==paste0("rotacion_",i)) %>%
     select(-rotacion_hru) %>% 
-    apply(1,sd) %>%
-    plot(main=paste("Variacion profit_ha rotacion ",i))
+    apply(2,sd) %>%
+    plot(main=paste("Variace_profit_rotation",i), type="lines")
+
+#  jpeg(paste0("Varianza_profit_ha_rotacion",i,".jpg"))
+  
+  }
+
+for (i in 1:7) {
+  cbind(profit_ha, rotacion_hru) %>%
+    as.data.frame() %>% 
+    filter(rotacion_hru==paste0("rotacion_",i)) %>%
+    select(-rotacion_hru) %>% 
+    apply(2,mean) %>%
+    plot(main=paste("Mean_profit_rotation",i), type="lines")
+  
+  #  jpeg(paste0("Varianza_profit_ha_rotacion",i,".jpg"))
+  
 }
+
+
+#annual costs (without disc) show that rotation 3 is relatively more 
+#expensive than the rest of the rotations
+
+costos %>% apply(2, function(x)sum(x)/6)
+
+
+#annual profit per hectare in each land use
+#profit in cattle seems to be unrealistic (4000 usd/ha per annum)
+#profit in eucaliptus also seems to be bigger than expected, but is not that unrealistic
+#profit in pure agriculture is nearly zero
+#profit in mixed ag and cattle land use is around 1500-2000 usd ha
+#profit in rot 6, which is mainly pasture, assumed to produce cattle
+#is way bigger than profit in pure cattle because yields in rot 6 are 3 or 4 times the yields of purely cattle hrus   
+
+
+
+for (i in 1:7) {
+  print(paste0("rotacion_",i, "profit_ha"))
+  
+    cbind(profit_ha_disc, rotacion_hru) %>%
+    as.data.frame() %>% 
+    filter(rotacion_hru==paste0("rotacion_",i)) %>%
+    select(-rotacion_hru) %>% mutate_all(function(x)as.numeric(x)) %>%
+    apply(1,function(x){sum(x)/6}) %>% mean() %>% print()
+
+  #  jpeg(paste0("profit_ha_rotacion",i,".jpg"))
+  
+}
+
 
 for (i in 1:7) {
   cbind(profit_ha, rotacion_hru) %>%
@@ -260,6 +325,8 @@ for (i in 1:7) {
     mutate_all( function(x) as.numeric(as.character(x))) %>%
     apply(1, mean) %>%
     plot(main=paste("profit_ha rotacion ",i))
+  
+   jpeg(paste0("profit_ha_rotacion ",i,".jpg"))
 }
 
 
