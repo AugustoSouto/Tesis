@@ -104,8 +104,8 @@ area_buffer<-function(hru=1){
     select(Zona)
   
   zona_hru <- if(zona_hru=="A")zona_hru=1 else
-    if(zona_hru=="B")zona_hru=2 else
-      if(zona_hru=="C")zona_hru=3    
+              if(zona_hru=="B")zona_hru=2 else
+              if(zona_hru=="C")zona_hru=3    
   
   ancho=anchos[[n_esc]][zona_hru] %>% as.numeric()
   
@@ -152,8 +152,8 @@ area_buffer_ha<-function(hru=1){
     select(Zona)
   
   zona_hru <- if(zona_hru=="A")zona_hru=1 else
-    if(zona_hru=="B")zona_hru=2 else
-      if(zona_hru=="C")zona_hru=3    
+              if(zona_hru=="B")zona_hru=2 else
+              if(zona_hru=="C")zona_hru=3    
   
   ancho <- anchos[[n_esc]][zona_hru] %>% as.numeric()
   
