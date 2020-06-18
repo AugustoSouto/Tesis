@@ -1,0 +1,11 @@
+################DOCS#######################
+
+###########################################
+TxtInOut/hru_pw_day.txt *RESULTADOS POR HRU
+###########################################
+TxtInOut/hru.con *INFORMACION DE LAS HRU
+###########################################
+hru-data.hru *HRU DATA(incluye rotacion)
+###########################################
+TxtInOut/mgt_out.txt *OPERACIONES EN LAS HRU
+###########################################

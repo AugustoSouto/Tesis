@@ -1,4 +1,5 @@
 #######SCRIPT MODELO INTEGRADO####### 
+
 rm(list = ls())
 
 #hacer funcion
@@ -74,10 +75,10 @@ area %>% t() %>% as.data.frame() %>%
 land_use <- grep("land_use", colnames(data_hru))
 
 seq <- TraMineR::seqdef(data_hru[,land_use]) 
-#below, graph the land use sequence for each hru
 TraMineR::seqIplot(seq, border = NA, with.legend = "right")
 
 #number of crop rotations
+
 data_hru[,land_use] %>% as.list() %>% unique() %>% length()
 
 #sequence of states for each crop rotation
@@ -92,20 +93,7 @@ data_hru[,land_use] %>% as.list() %>% unique()
 #data frame with all 7 rotations
 df <- data_hru[,land_use] %>% as.list() %>% unique() %>% as.data.frame()
 
-#set colnames of unique land uses
-#rotation 1: cattle *
-#rotation 2: eucaliptus forestry *
-#rotation 3: pure agricultural rotation
-#rotation 4: mixed agricultural-cattle rotation
-#rotation 5: mixed agricultural-cattle rotation
-#rotation 6: dairy rotation
-#rotation 7: native forestry
-
-# *cattle, eucaliptus and native forestry land uses are not rotations
-# only use the name rotation so as to put the same name to all sequences
-
-
-
+#set colnames of unique rotations
 colnames(df)<-c("rotacion_1","rotacion_2","rotacion_3",
                 "rotacion_4","rotacion_5","rotacion_6",
                 "rotacion_7")

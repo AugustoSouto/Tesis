@@ -1,0 +1,79 @@
+
+************************ANOTACION**********************************
+VER COMO DEFINIR LOS COSTOS POR ROTACION.
+SEGUN LO HABLADO CON FRANCISCO Y MIGUEL SE SUMARIAN LOS COSTOS POR CULTIVO
+MAS LOS COSTOS DE LAS OPERACIONES
+********************************************************************
+
+
+
+ver como convertir biomasa a kilos de carne y revenue (preguntar a rafael)
+
+preguntar si la variable de biom se aproxima a la producciond de biomasa del campo natural
+kilos por hectarea en la cuenca, aplicar variacion al promedio de biomasa en la hru para sacar la produccion en cada hru
+
+mail de eliana nervi para preguntarle como 
+hizo ella para agregar las variables ambientales (flow, n y p) a una frecuencia mayor
+
+preguntar a rafael que onda con los eucaliptus, que funcion tienen para ver como
+meterlos en la parte economica
+
+preguntar para que se usa la avena. si se usa para vender, multiplica por precio.
+si se usa para darle de comer a los animales, pasar a leche o carne
+fijarme si en el doc del santa lucia hay alguna mencion al tema
+
+
+
+
+
+******************TO DO**********************************
+
+1-VER COMO SE PROYECTA EL CLIMA EN LA PREDICCION DEL SWAT (RAFAEL O FLORENCIA)
+2-HACER UN MAPA DE LA CUENCA CON SUBCUENCA, BUFFERS (50 METROS O ALGO ASI), USOS (BASELINE)
+
+
+**********************TO DO LIST*******************************************
+
+
+5- A partir de las anteriores imputaciones de yield y price, generar los datos de 
+   revenue (por hru, time, cultivo y tipo de irrigacion)
+   
+6- Generar array con datos de costos (por hru, time, cultivo y tipo de irrigacion)
+7- Generar array con datos de irrigacion (por hru, time, cultivo y tipo de irrigacion)
+8- Definir escalar con el precio del agua 
+9- Definir escalar con el precio de no irrigar (0)
+10-Juntar 8 y 9 en un vector
+11-Definir distintos costos de tecnologías en un array (vector)
+12-Definir costos fijos en los diferentes cultivos en un array (vector)
+
+13- A partir de las imputaciones con los precios de agua, costos fijos y cantidad
+    de agua utilizada, computar un array (por hru, time, cultivo y tipo de irrigacion)
+	que tenga los costos.
+
+14-A partir de 5 y 13, computar el margen de ganancia por HRU restandole al array de 5 el array de 13	
+
+15-Usar 14 con un array de areas y obtener la ganancia (por hru, time y cultivo)
+16-Usar 15 con un array, y obtenr la ganancia (por hru y time) sumando todos los cultivos
+17 Descontar el flujo de ingresos en cada HRU por un vector a definir.
+
+18-Sumar todas las gananancias descontadas---->>>>>VALOR DE LA FUNCION OBJETIVO
+
+19-Resticción de flujo: fijar un array con el flow max para el flujo de la cuenca
+20-Fijar una fracción del flow max, como la cantidad que puede ser efectivamente extraida
+                                    para riego en la cuenca
+21-Aplicar un porcentaje a la cantidad posible de extracción, por ej, 1/n, como la maxima cantidad
+   que esta permitida extraer por hru
+21-Chequear si se cumple la restricción usando el flow max y cantidad extraible, se cumple si 
+   el flow observado es mayor al minimo
+22-Chequear que se cumplan las restricciones de area, sumando los arrays de area en la
+   dimensión cultivos, ver que eso es menor o igual al area total de la HRU
+   
+23-Finalmente, hacer una función que devuelva el valor de la función objetivo en caso de 
+   ser el uso de suelo factible, o un mensaje que indique la no factibilidad del uso del suelo
+   
+ 
+   
+    
+   
+
+****************************************************************************
