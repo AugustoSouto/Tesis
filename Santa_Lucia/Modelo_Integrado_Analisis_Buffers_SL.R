@@ -75,11 +75,7 @@ ar <-(area %>% t())
 #converstion to hectares: 1km2=100 ha
 ar <-ar*100
 
-
-#Calculo del area ocupada por el buffer--
-##Area_Buffer----
-#la funcion da el area en km2
-
+#zonas de cada hru
 zonaA <- c(1,7,8,10,14,15,16,17,18,19,20,22,24,28)
 zonaB <- c(4,5,25,31,3,27,2,23,29)
 zonaC <- c(41,12,21,30,9,13,32,38,36,34,6,11,37,35,39,40,26,33)
@@ -115,111 +111,22 @@ for(i in 1:25){
      }
 }
 
-bandas <- mutate_all( bandas, function(x)as.numeric(x)) %>%
-  as.data.frame() 
-
+bandas <- mutate_all( bandas %>% as.data.frame(),
+                      function(x)as.numeric(x)
+                      ) 
+names(bandas)<-c("A", "B", "C")
 duplicated(bandas)
 
-
-
+setwd(paste0(folder,"Tesis/Santa_Lucia/"))
 
 #FUNCION QUE CALCULA EL AREA DE BUFFER EN kM2
+source("area_buffer.R")
 #PARA EL ESCENARIO A EVALUAR
-area_buffer<-function(hru=1){
-  
-  hru_sub <- hru_info %>% filter(HRU_ID1==hru) %>%
-    select(Subbasin) 
-  
-  zona_hru <- zonas %>% filter(zonas$Subbasin==as.numeric(hru_sub)) %>%
-    select(Zona)
-  
-  zona_hru <- if(zona_hru=="A")zona_hru=1 else
-              if(zona_hru=="B")zona_hru=2 else
-              if(zona_hru=="C")zona_hru=3    
-  
-  ancho=anchos[[n_esc]][zona_hru] %>% as.numeric()
-  
-  dir2<-"C:/Users/Usuario/Google Drive/SWAT-SubSantaLucia/12-RN_out/"
-  
-  n<-hru
-  #n = 700
-  hru_info[n,]
-  
-  fname = paste0("C:/SWAT/Rafael/SL_20200401/",
-                 hru_info[n,"HRUGIS"],
-                 ".hru")
-  
-  readLines(fname)[1:5]
-  
-  #largo del hru
-  SLSUBBSN <- as.numeric(substr(readLines(fname)[3],1,16)) 
-  
-  HRUarea = hru_info[n, "HRU_AREA_km2"];HRUarea
-  #area=largo*ancho-->ancho=area/largo
-  #1000000 es para pasar de km2 a m2
-  HRUW = 1000000*HRUarea/SLSUBBSN; HRUW
-  HRUW
-  
-  #diferentes anchos de buffer en metros
-  #FILTERW = c(5,10,20,40,80)
-  FILTERW =ancho
-  
-  #el area del buffer es el largo del buff por el ancho del hru
-  #eventualmente, si el ancho de banda es muy grande, 
-  #puede pasar que tu area de buffer sea mayor a la del HRU
-  FILTER_area = HRUW*FILTERW; FILTER_area
-  FILTER_area_km2=FILTER_area/1000000; FILTER_area_km2
-  return(FILTER_area_km2)
-  
-}
+source("area_buffer_ha.R")
+
+
 #FUNCION QUE CALCULA EL AREA DE BUFFER EN HECTAREAS
-area_buffer_ha<-function(hru=1){
-  
-  hru_sub <- hru_info %>% filter(HRU_ID1==hru) %>%
-    select(Subbasin) 
-  
-  zona_hru <- zonas %>% filter(zonas$Subbasin==as.numeric(hru_sub)) %>%
-    select(Zona)
-  
-  zona_hru <- if(zona_hru=="A")zona_hru=1 else
-              if(zona_hru=="B")zona_hru=2 else
-              if(zona_hru=="C")zona_hru=3    
-  
-  ancho <- anchos[[n_esc]][zona_hru] %>% as.numeric()
-  
-  dir2<-"C:/Users/Usuario/Google Drive/SWAT-SubSantaLucia/12-RN_out/"
-  
-  n<-hru
-  #n = 700
-  hru_info[n,]
-  
-  fname <- paste0("C:/SWAT/Rafael/SL_20200401/",
-                  hru_info[n,"HRUGIS"],
-                  ".hru")
-  
-  readLines(fname)[1:5]
-  
-  #largo del hru
-  SLSUBBSN <- as.numeric(substr(readLines(fname)[3],1,16)) 
-  
-  HRUarea <- hru_info[n, "HRU_AREA_km2"];HRUarea
-  #area=largo*ancho-->ancho=area/largo
-  #1000000 es para pasar de km2 a m2
-  HRUW <- 1000000*HRUarea/SLSUBBSN; HRUW
-  HRUW
-  
-  #diferentes anchos de buffer en metros
-  #FILTERW = c(5,10,20,40,80)
-  FILTERW <- ancho
-  
-  #el area del buffer es el largo del buff por el ancho del hru
-  #eventualmente, si el ancho de banda es muy grande, 
-  #puede pasar que tu area de buffer sea mayor a la del HRU
-  FILTER_area <- HRUW*FILTERW; FILTER_area
-  FILTER_area_ha <- FILTER_area/10000; FILTER_area_ha
-  return(FILTER_area_ha)
-  
-}
+
 
 areas_buff_ha<-matrix(nrow=865,ncol=1)
 
@@ -228,7 +135,6 @@ areas_buff_ha<-matrix(nrow=865,ncol=1)
 areas_hru_ha<-hru_info[1:865, "HRU_AREA_km2"]*100
 
 #PRICES----
-
 #generate a matrix that contains the crop prices
 prices<-matrix(nrow=865, ncol=72)
 
@@ -404,6 +310,10 @@ pos <- which.min(abs(0.025-P[,1,1]))
 #la prob es calculada en base a la concentr diaria de P
 restriction[n_esc]<-P[pos,,n_esc][2]>0.5
 
+print(escenario[n_esc])
+print(paste("Objective Value", obj_value[n_esc]))
+print(paste("restriction is met?", restriction[n_esc]))
+
 readline(prompt="Press any key to run next scenario")
 
 }
@@ -426,9 +336,10 @@ val_max <- eval_scenarios %>% filter(restriction==1) %>% max()
 
 scenario_index<-match(val_max, eval_scenarios$obj_value)
 
-anchos[[scenario_index]]
+#Buffer Optimo
+bandas[scenario_index,]
+bandas[feasible_scenarios,]
 
-which.min(eval_scenarios$obj_value)
 
 
 
