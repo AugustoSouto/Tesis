@@ -1,6 +1,12 @@
 rm(list = ls())
 
-setwd("C:/Users/Usuario/Desktop/Git/Tesis/HRU_DATA/")
+library(tidyverse)
+
+#search folder in pc
+folder <-"C:/Users/Usuario/Desktop/Git/"
+
+#Github folder
+setwd(paste0(folder,"Tesis/HRU_DATA_FILES/"))
 
 objetos<-list("area", "P", "rotaciones", "rotacion_hru",
               "land_uses", "yield_df", "hru_info", 
@@ -17,8 +23,14 @@ for (i in 1:length(objetos)) {
   
 }
 
-setwd("C:/Users/Usuario/Desktop/Git/Tesis/")
-dir_escenarios<-"C:/Users/Usuario/Google Drive/SWAT-SubSantaLucia/12-RN_out/output_buffer_diarioFW/"
+setwd(paste0(folder,"Tesis/"))
+
+folder_SL<-"C:/Users/Usuario/"
+
+dir_escenarios<-paste0(folder_SL,
+                       "Google Drive/SWAT-SubSantaLucia/12-RN_out/output_buffer_diarioFW/"
+                        )
+
 escenario <- list.files(dir_escenarios, pattern="RDS")
 
 
@@ -92,6 +104,24 @@ for(i in 1:length(escenario)){
     stringr::str_remove("C") %>%
     strsplit("_")
 }               
+
+bandas<-matrix(nrow=25, ncol=3)
+
+for(i in 1:25){
+  for(j in 1:3){
+   
+    bandas[i,j]<-  anchos[[i]][j]
+
+     }
+}
+
+bandas <- mutate_all( bandas, function(x)as.numeric(x)) %>%
+  as.data.frame() 
+
+duplicated(bandas)
+
+
+
 
 #FUNCION QUE CALCULA EL AREA DE BUFFER EN kM2
 #PARA EL ESCENARIO A EVALUAR
