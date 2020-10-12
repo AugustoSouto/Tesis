@@ -1,8 +1,8 @@
 rm(list=ls())
 
+#INTRO----
 ##IMPORTANT FILES IN SWAT+ OUTPUT###
-
-
+SWATplusR::run_swatplus
 
 #Cambiar carpeta de trabajo POR QU? YA NO ME LO RECONOCE?? SI YA SE LA DI EN ROOT.DIR PREGUNTAR!!!
 setwd("C:/SWAT/Florencia/CCa3/Scenarios/Default/TxtInOut/")
@@ -14,8 +14,8 @@ list.files(pattern=".exe")
 #el archivo que controla el tiempo
 list.files(pattern=".sim")
 
-time<-list.files(pattern=".sim")
-time<-read_lines(time)
+time <- list.files(pattern=".sim")
+time <- read_lines(time)
 
 #change simulation period
 gregexpr(pattern ='0',time[3]) #posiciones de los dias
@@ -63,6 +63,8 @@ write_lines(print, "print.prt") #sobrescribir archivo con valores nuevos
 #flo_out en el archivo basin_sd_cha. 
 #Sobre P y N no encontré las variables análogas a TOT_Nkg y TOT_Pkg, ni tampoco encontré el análogo a LULC.
 
+
+#OUTPUT FILES----
 list.files(pattern="hru")
 
 #la variable de irrigación (irr) esta en el siguiente archivo

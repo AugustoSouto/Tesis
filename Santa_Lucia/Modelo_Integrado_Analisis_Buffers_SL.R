@@ -32,6 +32,7 @@ dir_escenarios<-paste0(folder_SL,
                         )
 
 escenario <- list.files(dir_escenarios, pattern="RDS")
+escenario
 
 
 
@@ -182,6 +183,7 @@ areas_sin_buffer <- mutate_all(areas_sin_buffer,
 #equation: cost_t=Area(unit).CostRotation(per unit)_t
 #create a total costs matrix
 #each row is a productive unit and each column a month
+
 costos_tot <- sapply(1:nrow(costos_ha),
                      function(x) costos_ha[x,] * t(areas_sin_buffer)[x]) %>%
                       t()
@@ -333,6 +335,18 @@ for (i in feasible_scenarios) {
 
 
 val_max <- eval_scenarios %>% filter(restriction==1) %>% max()
+
+feas_values<-eval_scenarios %>% filter(restriction==1) %>% arrange()
+
+scen_values<-matrix(nrow=dim(feas_values)[1], ncol=2)
+scen_values[,2]<-feas_values$obj_value 
+
+for(i in 1:dim(feas_values)[1]){
+scen_values[i,1]<-match(values[i,1], eval_scenarios$obj_value)
+}
+
+scen_values<-scen_values %>% as.data.frame()
+colnames(scen_values)<-c("Scenario", "Value")
 
 scenario_index<-match(val_max, eval_scenarios$obj_value)
 

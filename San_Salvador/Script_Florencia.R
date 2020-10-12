@@ -1,5 +1,6 @@
-C:\SWAT\Florencia\CCa3\Scenarios\Default\TxtInOut
+
 rm(list=ls())
+
 # Packages 
 require(tidyverse)
 require(lubridate)
