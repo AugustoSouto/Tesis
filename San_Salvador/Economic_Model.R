@@ -105,11 +105,116 @@ mutate(profit_hru=revenue-crop_cost_hru-irr_cost,
        profit_ha=revenue_ha-crop_cost_ha-irr_cost_ha)  
 
 #Fixed Cost=Fixed Prod Cost
+
+
+#save data
 setwd("C:/Users/Usuario/Desktop/Git/Tesis")
 save.image("Economic_Profit.RData")
 
 #Utility----
 
+alpha <- 0.88 #Parameters from Kahneman-Tversky and 
+              #Adopted by Rosas, Sans and Arana
+#See "A parametric analysis of prospect theory's
+#functionals for the general population"
+#by Booij, Van Praag and Kuilen 2009
+#alpha range:0.22 (Camerer and ho 1994) to 1.01 (Fehr-Duda 2006)
+
+lambda <- 2.25 #Parameters from Kahneman-Tversky and 
+               #Adopted by Rosas, Sans and Arana
+#Lambda range in Booij et al is 1.07 to 3.2
+
+#interpretation: alpha defines the curvature
+#               of ut function 
+#               lambda is the risk aversion, defined
+#               as lambda=-u(-1)/u(1)
+
+
+profit_data %>% dplyr::select(hru==3)
+
+coso<-profit_data %>% select(profit_ha,yr ) %>% filter(hru==3)  %>% 
+as.data.frame() %>%  select(profit_ha)
+
+coso<- coso %>% as.vector
+
+prueba<- c(1000, -1000)
+prueba<- prueba  %>% as.matrix(ncol=1)
+
+#put as an input, the farmer profit vector
+
+farmer_utility<- 
+function(alpha=0.88, profit, lambda=2.25){
+
+profit <- as.matrix(profit, ncol=1)
+n_years <- dim(profit)[1]
+
+utility <- matrix(NA,nrow=n_years, ncol=1)
+
+for (i in 1:n_years) {
+  
+if(profit[i,1]>=0){utility[i,1]=profit[i,1]^alpha} else
+if(profit[i,1]<0){utility[i,1]=-lambda*((-profit[i,1])^alpha)}
+}  
+
+tot_value=sum(utility)
+return(tot_value)
+}
+
+certainty_equivalent <-
+function(alpha=0.88, profit, lambda=2.25){
+  
+  profit <- as.matrix(profit, ncol=1)
+  n_years <- dim(profit)[1]
+  
+  mean_prof <- mean(profit)
+  mean_vector <- rep(mean_prof, n_years) %>% 
+                 as.matrix( ncol=1)
+  
+  utility <- matrix(NA,nrow=n_years, ncol=1)
+  
+  for (i in 1:n_years) {
+    
+    if(mean_vector[i,1]>=0){utility[i,1]=mean_vector[i,1]^alpha} else
+      if(mean_vector[i,1]<0){utility[i,1]=-lambda*((-mean_vector[i,1])^alpha)}
+  }  
+  
+  tot_value=sum(utility)
+  
+  ref_value <- farmer_utility(profit = profit)
+
+  return(tot_value-ref_value)
+}
+
+certainty_equivalent(profit = prof_vec)
+
+hrus <- profit_data$hru %>% unique
+
+utilities <- matrix(nrow=length(hrus), ncol=1)
+
+
+for (i in hrus){
+    print(i)
+
+    prof_vec<- profit_data %>% as.data.frame() %>%
+    filter(hru==i) %>% select(profit_ha) 
+
+    utilities[match(i, hrus)] <- farmer_utility(profit=prof_vec)
+
+}
+
+for (i in hrus){
+  print(i)
+  
+  readline(prompt="next")
+  
+ 
+}
+
+profit_data %>% as.data.frame() %>%
+  filter(hru==3) %>% select(profit_ha) %>%
+  View
+
+basin_utility<- 
 
 
 #Scenarios----
