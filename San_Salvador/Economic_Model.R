@@ -111,7 +111,7 @@ mutate(profit_hru=revenue-crop_cost_hru-irr_cost,
 setwd("C:/Users/Usuario/Desktop/Git/Tesis")
 save.image("Economic_Profit.RData")
 
-#Utility----
+#Utility Functions----
 
 alpha <- 0.88 #Parameters from Kahneman-Tversky and 
               #Adopted by Rosas, Sans and Arana
@@ -130,18 +130,17 @@ lambda <- 2.25 #Parameters from Kahneman-Tversky and
 #               as lambda=-u(-1)/u(1)
 
 
-profit_data %>% dplyr::select(hru==3)
 
+#vector profit para probar
 coso<-profit_data %>% select(profit_ha,yr ) %>% filter(hru==3)  %>% 
 as.data.frame() %>%  select(profit_ha)
 
-coso<- coso %>% as.vector
 
-prueba<- c(1000, -1000)
-prueba<- prueba  %>% as.matrix(ncol=1)
 
 #put as an input, the farmer profit vector
 
+
+#Calcuate the farmer utility from profits
 farmer_utility<- 
 function(alpha=0.88, profit, lambda=2.25){
 
@@ -160,36 +159,46 @@ tot_value=sum(utility)
 return(tot_value)
 }
 
-certainty_equivalent <-
-function(alpha=0.88, profit, lambda=2.25){
-  
-  profit <- as.matrix(profit, ncol=1)
-  n_years <- dim(profit)[1]
-  
-  mean_prof <- mean(profit)
-  mean_vector <- rep(mean_prof, n_years) %>% 
-                 as.matrix( ncol=1)
-  
-  utility <- matrix(NA,nrow=n_years, ncol=1)
-  
-  for (i in 1:n_years) {
-    
-    if(mean_vector[i,1]>=0){utility[i,1]=mean_vector[i,1]^alpha} else
-      if(mean_vector[i,1]<0){utility[i,1]=-lambda*((-mean_vector[i,1])^alpha)}
-  }  
-  
-  tot_value=sum(utility)
-  
-  ref_value <- farmer_utility(profit = profit)
 
-  return(tot_value-ref_value)
-}
+objective_value <- farmer_utility(profit = coso)
 
-certainty_equivalent(profit = prof_vec)
+#Put the profit vector and a scala representing the desires utility level
+#Certainty Equivalent X_ce such as U(X_ce)=E(U[X]) where X is the observed vector
 
+certainty_equivalent <- 
+function(utility_level, profit, alpha=0.88, lambda=2.25){
+  
+certainty_equivalent<- NA
+N <-dim(profit)[1]
+
+if(utility_level>=0){certainty_equivalent = ((utility_level/N)^(1/alpha))*N} else
+if(utility_level<0){certainty_equivalent = (-(-utility_level/(lambda*N))^(1/alpha))*N}
+
+return(certainty_equivalent)
+
+} 
+
+certainty_equivalent(utility_level = -200, profit = prof_vec)
+
+#Put the observed profit (E(X)) and CE to estimate risk premium
+#calculate the risk premium the farmer is 
+#willing to pay to obtain the certainty equivalent
+#Risk_Premium=X-Certainty Equivalent
+
+risk_premium <- 
+function(profit, certainty_equivalent){
+  
+  exp_val <- profit %>% sum
+  
+  return(exp_val - certainty_equivalent)   
+  
+} 
+
+
+ 
 hrus <- profit_data$hru %>% unique
 
-utilities <- matrix(nrow=length(hrus), ncol=1)
+results <- matrix(nrow=length(hrus), ncol=3)
 
 
 for (i in hrus){
@@ -198,21 +207,25 @@ for (i in hrus){
     prof_vec<- profit_data %>% as.data.frame() %>%
     filter(hru==i) %>% select(profit_ha) 
 
-    utilities[match(i, hrus)] <- farmer_utility(profit=prof_vec)
+    results[match(i, hrus),1] <- farmer_utility(profit=prof_vec)
+    results[match(i, hrus),2] <- sum(prof_vec)
+    results[match(i, hrus),3] <- certainty_equivalent(utility_level = farmer_utility(profit=prof_vec),
+                                                      profit = prof_vec)
 
 }
 
-for (i in hrus){
-  print(i)
-  
-  readline(prompt="next")
-  
- 
-}
+results %>% as.data.frame() %>%
+            rename(Utility=V1,
+                   Profits=V2,
+                   certainty_equivalent=V3) %>% 
+           mutate(risk_premium=Profits-certainty_equivalent) %>% View
 
-profit_data %>% as.data.frame() %>%
-  filter(hru==3) %>% select(profit_ha) %>%
-  View
+results<-
+results %>% as.data.frame() %>% mutate(risk_premium=V2-V3) %>% View
+
+
+
+#Utility Aggregation----
 
 basin_utility<- 
 
