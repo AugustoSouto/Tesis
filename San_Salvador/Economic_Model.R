@@ -1,10 +1,72 @@
+#to do: get area
+#       compute utility and profit
 rm(list = ls())
-load("C:/Users/Usuario/Desktop/Git/Tesis/Datos_Modelo.RData")
+
+model_scripts<- "C:/Users/Usuario/Desktop/Git/Tesis/San_Salvador/"
+
+setwd(model_scripts)
+
+scenarios <-
+list.files(model_scripts, pattern="RData")
+
+#for(i in scenarios){
+#print(i)  
+#load(i)
+#readline(prompt = "Press any key only if management scenarios are done and saved")
+#}
+
+load("SWAT_Sim_Without_Irrigation.RData")
+
+#load("C:/Users/Usuario/Desktop/Git/Tesis/Datos_Modelo.RData")
+
+#Rotation Area----
+areas %>% head
+hrus_rotations %>% head
+
+hru_info <- 
+  plyr::join(areas, hrus_rotations, by="hru"); head(hru_info)
+
+hru_info %>% group_by(lu_mgt) %>% 
+  summarise(area_rot=sum(area)) %>%
+  mutate(pct_rot=area_rot/sum(area_rot)) %>%
+write_excel_csv2("Areas_Rot.csv")
+    
+
+#Env Output----
+#Use Channel two (2) output,
+#since this channel is located the at the basin outlet
+
+#Phosphorus Concentration Limit: 0.25 mg/L
+#Nitrogen Concentration Limit: 10 mg/L
+
+Ph_lim <- 0.25
+N_lim <- 10
+
+environmental_output %>% 
+  filter(channel==2) %>% select( N_Concentration) %>% as.ts() %>%
+  forecast::autoplot(ylim=c(0,10))
+
+environmental_output %>% 
+  filter(channel==2) %>% select( P_Concentration) %>% as.ts() %>%
+  forecast::autoplot(ylim=c(0,0.25))
+
+Excess_Days <-
+environmental_output %>% 
+filter(channel==2) %>%
+mutate(P_excess=case_when(P_Concentration>=Ph_lim ~ 1,
+                          P_Concentration<Ph_lim ~ 0),
+       N_excess=case_when(N_Concentration>=N_lim ~ 1,
+                          N_Concentration<N_lim ~ 0)
+       ) %>% 
+select(P_excess, N_excess)  %>%
+apply(2, function(x)round(sum(x)/(length(x)),2))   
+
+#Check if the environmental restictions are violated
+ifelse(Excess_Days>0.1,"TRUE","FALSE")
 
 #Profit Computation----
 
 #Time Unit:Yearly
-
 
 #Profit Equation
 #1-Profit=Revenue-Cost
@@ -64,7 +126,13 @@ relocate(year, .before=crop)
 
 output %>% filter(hru==3) %>% View
 
+plyr::join(output, hrus_rotations, by="hru") %>%
+select(lu_mgt) %>% table()
 
+plyr::join(output, hrus_rotations, by="hru") %>%
+filter(lu_mgt=="eec_lum") %>% View
+
+output %>% select(hru) %>% 
 #Reported price by Santiago Arana is 0.65 usd/mm 
 #Reported price by Claudio Garcia for 2017/18 is 1.4
 
@@ -130,10 +198,9 @@ lambda <- 2.25 #Parameters from Kahneman-Tversky and
 #               as lambda=-u(-1)/u(1)
 
 
-
 #vector profit para probar
-coso<-profit_data %>% select(profit_ha,yr ) %>% filter(hru==3)  %>% 
-as.data.frame() %>%  select(profit_ha)
+coso <- profit_data %>% select(profit_ha,yr ) %>% filter(hru==3)  %>% 
+        as.data.frame() %>%  select(profit_ha)
 
 
 
@@ -145,6 +212,7 @@ farmer_utility<-
 function(alpha=0.88, profit, lambda=2.25){
 
 profit <- as.matrix(profit, ncol=1)
+
 n_years <- dim(profit)[1]
 
 utility <- matrix(NA,nrow=n_years, ncol=1)
@@ -226,8 +294,8 @@ results %>% as.data.frame() %>% mutate(risk_premium=V2-V3) %>% View
 
 
 #Utility Aggregation----
-
-basin_utility<- 
+ 
+basin_utility <-  
 
 
 #Scenarios----

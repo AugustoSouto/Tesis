@@ -1,4 +1,4 @@
-#CORRIDA DE LOS ESCENARIOS EN SWAT-----
+#RUN SWAT SCENARIOS-----
 rm(list = ls())
 
 library(tidyverse)
@@ -9,7 +9,7 @@ model_files<- "C:/Users/Usuario/Desktop/SWATsept/SSalvador_LU2018_v0/Scenarios/D
 model_scripts<- "C:/Users/Usuario/Desktop/Git/Tesis/San_Salvador/"
   
 #1 Settings-----
-#1.1-Setear time-----
+#1.1-Set time-----
 #check time
 #shell.exec("C:/SWAT/Florencia/CCa3/Scenarios/Default/TxtInOut/time.sim")
 setwd(model_files)
@@ -22,7 +22,7 @@ yr_end <- "2025"
 source("Set_time.R")
 time(year_begin = yr_begin, year_end = yr_end, path = model_files)
 
-#1.2-Setear Print-----
+#1.2-Set Print-----
 #archivo print.prt
 shell.exec(paste0(model_files, "print.prt"))
 
@@ -84,7 +84,7 @@ readline(prompt = "Press any key only if management scenarios are done and saved
 ##3.3 Identificar el ncol en el que termina op_typ
 ##3.4 Calcular ncol de op_typ menos num de letras del nombre, eso me da ncol
 ##3.5 El nrow lo saco haciendo el nrow del nombre de la rotacion +1
-##3.6 Ahì, con nrow y ncol, pongo el nombre de la rutina el el txt de management
+##3.6 Ah?, con nrow y ncol, pongo el nombre de la rutina el el txt de management
 
 #4 Run the Model----
 #4-Correr el modelo
@@ -172,8 +172,6 @@ mgt_out %>% mutate(hru=as.numeric(hru),
 arrange(hru) %>% 
 select(hru, date_begin, date_end, month_end, crop) 
   
-
-
 #finalmente, ahora en mgt_out tenemos para cada
 #hru el uso definido por intervalo de fechas
 #el yield usara el crop que caiga en la fecha
@@ -201,13 +199,20 @@ shell.exec(paste0(model_files, "hru.con"))
 n_hru <- read_table2(paste0(model_files, "hru.con"), skip=1) %>%
   select(id) %>% unique %>% nrow
 
-#averiguar la unidad de medida
+
 areas <- read_table2(paste0(model_files, "hru.con"), skip=1) %>%
          select(id, area) %>% rename(hru=id) %>%
          mutate(hru=as.numeric(hru)) %>%
          arrange(hru)
 
-##5.3 Get Yield----
+#5.3 Get Rotations----
+#can modify hru rotations by editing the hru-data file
+hrus_rotations <- 
+  read_table2(paste0(model_files, "hru-data.hru"),
+              skip=1) %>% select("id", "lu_mgt") %>%
+  rename(hru=id)
+
+##5.4 Get Yield----
 ##yield file hru_pw
 
 shell.exec(paste0(model_files, "hru_pw_day.txt"))
@@ -234,14 +239,13 @@ mutate(hru=as.numeric(hru),
        month_yield=zoo::as.yearmon(date_yield)) %>%
 filter(yield>0)
 
-#5.4 Yield and LUSE----
-
+#5.5 Yield and LUSE----
 
 output <-
 plyr::join(mgt_out, hru_yield, by="hru" ) %>%
   filter(month_yield==month_end) 
    
-##5.5 Get Irrigation----
+##5.6 Get Irrigation----
 ##riego
 
 shell.exec(paste0(model_files, "mgt_out.txt"))
@@ -267,14 +271,30 @@ irr <- read_table2(paste0(model_files, "hru_wb_mon.txt"),
   mutate(hru=as.numeric(hru))
 
 irr_yr<-
-  irr %>% group_by(hru, yr) %>% summarise(irr_sum=sum(irr)) 
+  irr %>% group_by(hru, yr) %>% summarise(irr_sum=sum(irr))  
 
 
+#5.7 Get Environmental P and N----
 
+#
 
-setwd("C:/Users/Usuario/Desktop/Git/Tesis")
+environmental_output <-
+read_table2(paste0(model_files, "channel_sd_mon.txt"),
+            #n_max = 100,
+            skip=1) %>% select("unit",
+                               "mon", "day", "yr",
+                               "no3_out", "solp_out",
+                               ) %>%
+  mutate(date_env=lubridate::ymd(paste(yr, mon, day))) %>%
+  slice(-1)  %>% 
+  rename(channel=unit,
+         Nitrogen=no3_out,
+         Phosphorus=solp_out)
 
-save.image("Datos_Modelo.RData")
+#6 Save Output ----
+
+setwd(model_scripts)
+save.image("SWAT_Sim_Without_Irrigation.RData")
 
 
 
