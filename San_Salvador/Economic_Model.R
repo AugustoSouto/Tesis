@@ -5,7 +5,7 @@ rm(list = ls())
 model_scripts<- "C:/Users/Usuario/Desktop/Git/Tesis/San_Salvador/"
 
 setwd(model_scripts)
-
+#dd
 scenarios <-
 list.files(model_scripts, pattern="RData")
 
@@ -97,7 +97,7 @@ mutate(revenue=yield*area*price_ton/1000,
 #Cost=Variable Cost+Fixed Cost
 #Variable Cost=Water Price.Irrigated Water
 
-output
+head(output)
 
 #cost source: okara
 
@@ -132,7 +132,6 @@ select(lu_mgt) %>% table()
 plyr::join(output, hrus_rotations, by="hru") %>%
 filter(lu_mgt=="eec_lum") %>% View
 
-output %>% select(hru) %>% 
 #Reported price by Santiago Arana is 0.65 usd/mm 
 #Reported price by Claudio Garcia for 2017/18 is 1.4
 
@@ -170,7 +169,18 @@ select(-irr_sum) %>%
 mutate(irr_cost=replace_na(irr_cost,0),
        irr_cost_ha=round(irr_cost/area,2)) %>%
 mutate(profit_hru=revenue-crop_cost_hru-irr_cost,
-       profit_ha=revenue_ha-crop_cost_ha-irr_cost_ha)  
+       profit_ha=revenue_ha-crop_cost_ha-irr_cost_ha)  %>%
+plyr::join(hrus_rotations, by="hru")
+
+ggplot(  profit_data %>% group_by(hru) %>%
+         summarise(profit_ha_tot=sum(profit_ha)) %>%
+         plyr::join(hrus_rotations, by="hru"),
+       
+       aes(x=profit_ha_tot))+
+  geom_histogram()+
+  facet_grid(~lu_mgt)
+
+  facet_grid(lu_mgt~yr)
 
 #Fixed Cost=Fixed Prod Cost
 
@@ -198,10 +208,59 @@ lambda <- 2.25 #Parameters from Kahneman-Tversky and
 #               as lambda=-u(-1)/u(1)
 
 
+
+
 #vector profit para probar
 coso <- profit_data %>% select(profit_ha,yr ) %>% filter(hru==3)  %>% 
         as.data.frame() %>%  select(profit_ha)
 
+farmer_cara_utility <- function(){
+  #DISC FACTOR
+  
+  #beta discount the cash flow
+  #consider a 7.5% annual real social discount rate
+  #source: Oficina de Planeamiento y Presupuesta
+  
+  y<-0.075
+  #real rate is adjusted by us cpi, estimated at 2.5 p.c:
+  #nominal rate
+  y<-y+0.025
+  
+  #monthly effective rate:
+  y<-((1+0.075)^(1/12))-1
+  
+  #discount vector
+  r<-vector(length = 72) 
+  
+  for (i in 2:length(r)) {
+    r[1]<-1
+    r[i]<-(1/(1+y))^(i-1) 
+  }
+  
+  
+  ##HYPERBOLIC DISCOUNT###
+  #r<-vector(length = 72)
+  #for (i in 2:length(r)) {
+  #  r[1]<-1
+  #  r[i]<-1/(1+0.1*(i-1)) #same disc factor, faster decay at hyperbolic
+  #}
+  
+  #cash<-matrix(1, nrow=72, ncol=1)
+  
+  #cash<- profit_tot_year %>% as.matrix()
+  
+  #discounted flow in million of dollars
+  #discounted_flow <- sum(cash*r)/1000000 
+  
+  
+  
+  mat_r <- matrix(0, ncol=72, nrow=72)
+  diag(mat_r) <- r
+  
+  
+  profit_ha_disc  <- as.matrix(profit_ha) %*% mat_r #DISC FACTOR----
+  
+}
 
 
 #put as an input, the farmer profit vector

@@ -1,17 +1,12 @@
-		
-Uso del Suelo	Area en Has	Porcentaje del Suelo
-gras	78759	32,84%
-agrc	60588	25,27%
-agrc3 (rot 1)	45441	18,95%
-agrc2	30294	12,63%
-agrc4 (rot 6)	15147	6,32%
-frst	4506	1,88%
-mont	3416	1,42%
-urb	623	0,26%
-eec	611	0,25%
-crpr	357	0,15%
-watr	53	0,02%
-		
-	Rots 1+Rot 6	25,27%
-	Area Productiva	96,01%
-	Area Productiva Agricola	63,17%
+﻿lu_mgt;area_rot;pct_rot
+agrc_lum;60587,79621;0,2526655821
+agrc2_lum;30293,89816;0,1263327913
+agrc3_lum;45440,84733;0,1894991873
+agrc4_lum;15146,94908;0,0631663956
+crpr_lum;  357,11283;0,0014892458
+eec_lum;  610,90820;0,0025476331
+frst_lum; 4505,70814;0,0187898792
+gras_lum;78758,64566;0,3284423646
+mont_lum; 3416,17769;0,0142462770
+urb_lum;  623,27870;0,0025992211
+watr_lum;   53,09598;0,0002214229
