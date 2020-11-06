@@ -284,16 +284,25 @@ read_table2(paste0(model_files, "channel_sd_mon.txt"),
             skip=1) %>% select("unit",
                                "mon", "day", "yr",
                                "no3_out", "solp_out",
-                               ) %>%
+                               "flo_out") %>%
   mutate(date_env=lubridate::ymd(paste(yr, mon, day))) %>%
   slice(-1)  %>% 
   rename(channel=unit,
          Nitrogen=no3_out,
-         Phosphorus=solp_out)
+         Phosphorus=solp_out) %>%
+  mutate(Phosphorus=as.numeric(Phosphorus),
+         Nitrogen=as.numeric(Nitrogen),
+         flo_out=as.numeric(flo_out)) %>%
+  mutate(P_Concentration=(Phosphorus*1000000)/(flo_out*60*60*24*1000*30),
+         N_Concentration=(Nitrogen*1000000)/(flo_out*60*60*24*1000*30)
+         )
 
 #6 Save Output ----
 
 setwd(model_scripts)
+
+save.image("SWAT_Sim_05_Rot6.RData")
+
 save.image("SWAT_Sim_Without_Irrigation.RData")
 
 
