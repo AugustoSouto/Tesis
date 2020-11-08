@@ -8,11 +8,11 @@ setwd(model_scripts)
 scenarios <-
   list.files(model_scripts, pattern="RData"); scenarios
 
-for(s in scenarios){
+for(scenario in scenarios){
   
-  print(s)  
+  print(scenario)  
   setwd(model_scripts)  
-  load(s)
+  load(scenario)
   
   area_plot <-
     ggplot(areas, aes(x=area))+
@@ -20,7 +20,7 @@ for(s in scenarios){
     xlab("Area en Hectareas")+
     ylab("HRUs")
   
-  ggsave(paste0("area_plot_", scenario, ".jpeg"),
+  ggsave(paste0("area_plot_", str_remove( scenario, ".RData"), ".jpeg"),
          path = model_scripts
          #width =
          #height =
@@ -32,7 +32,7 @@ for(s in scenarios){
     xlab("Area en Hectareas")+
     ylab("HRUs")
   
-  ggsave(paste0("area_plot_rot", scenario, ".jpeg"),
+  ggsave(paste0("area_plot_rot", str_remove( scenario, ".RData"), ".jpeg"),
          path = model_scripts
          #width =
          #height =
@@ -64,7 +64,7 @@ for(s in scenarios){
                                     hjust=1),
           text = element_text(size=7.5))
   
-  ggsave(paste0("Nitrogeno", scenario, ".jpeg"),
+  ggsave(paste0("Nitrogeno", str_remove( scenario, ".RData"), ".jpeg"),
          path = model_scripts
          #width =
          #height =
@@ -93,7 +93,7 @@ for(s in scenarios){
                                     hjust=1),
           text = element_text(size=7.5))
   
-  ggsave(paste0("Fosforo", scenario, ".jpeg"),
+  ggsave(paste0("Fosforo", str_remove( scenario, ".RData"), ".jpeg"),
          path = model_scripts
          #width =
          #height =
@@ -117,7 +117,7 @@ for(s in scenarios){
                                     hjust=1),
           text = element_text(size=7.5))
   
-  ggsave(paste0("Caudal", scenario, ".jpeg"),
+  ggsave(paste0("Caudal", str_remove( scenario, ".RData"), ".jpeg"),
          path = model_scripts
          #width =
          #height =
@@ -137,7 +137,7 @@ for(s in scenarios){
     geom_histogram() +
     facet_wrap(~lu_mgt)
   
-  ggsave(paste0("Profit_ha_mean", scenario, ".jpeg"),
+  ggsave(paste0("Profit_ha_mean", str_remove( scenario, ".RData"), ".jpeg"),
          path = model_scripts
          #width =
          #height =
