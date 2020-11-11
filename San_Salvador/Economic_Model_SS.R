@@ -60,7 +60,7 @@ ifelse(Excess_Days>0.1,"TRUE","FALSE") %>%
 setwd("C:/Users/Usuario/Desktop/Git/Tesis")
 
 save.image("Economic_Profit.RData")
-#Utility Functions----
+#Ut Fun, CE and RP----
 
 alpha <- 0.88 #Parameters from Kahneman-Tversky and 
               #Adopted by Rosas, Sans and Arana
@@ -82,12 +82,6 @@ ne_utility <- function(value, rho=0.005){
   return(utility)
 }
 
-pow_utility <- function(value, rho=0.5){
-  
-  utility<- value^(1-rho)
-  
-  return(utility)
-}
 
 #cara utility for the hru in the whole period
 ne_utility_whole <- function(profit_vector, rho=0.005){
@@ -98,14 +92,7 @@ ne_utility_whole <- function(profit_vector, rho=0.005){
   return(utility)
 }
 
-pow_utility_whole <- function(profit_vector, rho=0.5){
-  
-  utility <- sapply(profit_vector, function(x){x^(1-rho)}) %>%
-             sum(na.rm = TRUE)
 
-  
-    return(utility)
-}
 
 #
 certainty_equivalent_ne <- function(profit_vector, rho=0.005){
@@ -126,18 +113,6 @@ certainty_equivalent_ne <- function(profit_vector, rho=0.005){
 
 } 
 
-certainty_equivalent_pow <- function(profit_vector, rho=0.5){
-  
-  if(rho==0){
-    ce <- profit_vector %>% unlist() %>% mean()
-  }else{
-  ce <- 
-      (pow_utility_whole(profit_vector=profit_vector, rho = rho)/
-        dim(profit_vector)[1])^(1/(1-rho)) 
-   }
-  
-  return(ce)
-} 
 
 #Put the observed profit (E(X)) and CE to estimate risk premium
 #calculate the risk premium the farmer is 
@@ -158,22 +133,10 @@ risk_premium_ne <- function(profit_vector, rho=0.005){
   
 } 
 
-risk_premium_pow <- function(profit_vector, rho=0.5){
-  
-  exp_val <- profit_vector %>% sum
-  
-  certainty_equivalent <-
-    certainty_equivalent_pow(profit_vector=profit_vector,
-                            rho=rho)
-  
-  risk_premium<- exp_val - certainty_equivalent
-  
-  return(risk_premium)   
-  
-} 
+ 
 
 
-#Utility Aggregation----
+#Computing CE----
 
 hru_list <-
   profit_data %>% select(hru) %>% unique() %>% 
@@ -183,13 +146,9 @@ ara_par <- seq(0.002, 0.009, by=0.001)
 
 ce_ne <- matrix(nrow = hru_list %>% length(),
                 ncol=8 ) 
-ce_pow <- matrix(nrow = hru_list %>% length(),
-                 ncol=8 ) 
 
 rp_ne <- matrix(nrow = hru_list %>% length(),
                 ncol=8)
-rp_pow <- matrix(nrow = hru_list %>% length(),
-                 ncol=8)
 
 coso <-
 profit_data %>% select(profit_ha,yr ) %>% filter(hru==3)  %>% 
@@ -226,39 +185,10 @@ print(c(ce_ne[match( n_hru, hru_list), match(ara, ara_par)],
 }
 }
 
-
-ara_par <- seq(0.5, 4, by=0.5)
-
-for(ara in ara_par){
-  for (n_hru in hru_list) {
-    
-    ce_pow[match( n_hru, hru_list), match(ara, ara_par)] <-  
-      certainty_equivalent_pow(profit_vector = 
-                                profit_data %>% select(profit_ha,yr ) %>%
-                                filter(hru==n_hru)  %>% 
-                                as.data.frame() %>%  select(profit_ha),
-                              rho=ara
-      )
-    
-    
-    
-    rp_pow[match( n_hru, hru_list), match(ara, ara_par)] <-  
-      risk_premium_pow(profit_vector = 
-                        profit_data %>% select(profit_ha,yr ) %>% filter(hru==n_hru)  %>% 
-                        as.data.frame() %>%  select(profit_ha),
-                      rho=ara)
-    print(ara)
-    print(n_hru)
-    
-    print(c(ce_pow[match( n_hru, hru_list), match(ara, ara_par)],
-            rp_pow[match( n_hru, hru_list), match(ara, ara_par)]
-    ))  
-    
-  }
-}
-
 resultados_hru <-
-cbind(ce_ne, ce_pow, rp_ne, rp_pow) %>% as.data.frame(); View(resultados_hru)
+  cbind(ce_ne, ce_pow, rp_ne, rp_pow) %>%
+  as.data.frame(); View(resultados_hru)
+
 
 res_names<- c(paste0("ce_ne_", rac_par), paste0("ce_pow_", rac_par),
               paste0("rp_ne_", rac_par), paste0("rp_now_", rac_par)
@@ -269,7 +199,10 @@ colnames(resultados_hru)<- res_names
 basin_utility <-  
 
 
-#Scenarios----
-#NECESITO MANDAR UN MAIL A FRANCISCO PARA SABER QUE ESCENARIOS PONER
-#O SEA, EN CADA ROTACION, NECESITO DEFINIR UN ESCENARIO DE RIEGO
+  
+#TOTAL Gain----
+#(CE_irr/CE_sinirr)-1
+
+#CE_2 is the CE of each scenario respect to base
+#but with the base scenario volatility
 
