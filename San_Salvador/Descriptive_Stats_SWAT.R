@@ -106,8 +106,8 @@ for(scenario in scenarios){
     geom_line(size=1) +
     xlab("Fecha") +
     ylab("Mg/L") +
-    labs(color=NULL, x="Fecha", y="M3/Seg")+
-    ggtitle("Caudal")+
+    labs(color=NULL, x="Fecha", y="M3/Seg") +
+    ggtitle("Caudal") +
     scale_x_date(#date_labels = "%b%y", 
       date_breaks = "6 month"
       #,
@@ -136,6 +136,25 @@ for(scenario in scenarios){
            plyr::join(hrus_rotations, by="hru"),aes(x=profit_ha_mean))+
     geom_histogram() +
     facet_wrap(~lu_mgt)
+  
+  profit_data %>% group_by(yr) %>%
+    summarise(profit_ha_mean=mean(profit_ha)) %>%
+    write_csv(paste0("Profits_Year", str_remove( scenario, ".RData"))
+      ,path = model_scripts
+      )
+  
+  ggplot(profit_data , aes(x=profit_ha))+
+    geom_histogram() +
+    facet_wrap(~yr) +
+    geom_vline(aes(xintercept = 0,
+                   colour="Perdida/Beneficio")) +
+    xlim(-1000, 1000)
+  
+ggsave(paste0("Profits_Year", str_remove( scenario, ".RData"), ".jpeg"),
+         path = model_scripts
+         #width =
+         #height =
+  )  
   
   ggsave(paste0("Profit_ha_mean", str_remove( scenario, ".RData"), ".jpeg"),
          path = model_scripts

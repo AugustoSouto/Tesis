@@ -7,6 +7,21 @@ library(tidyverse)
 
 model_files<- "C:/Users/Usuario/Desktop/SWATsept/SSalvador_LU2018_v0/Scenarios/Default/TxtInOut/"
 model_scripts<- "C:/Users/Usuario/Desktop/Git/Tesis/San_Salvador/"
+
+#0 Put Scenarios-----
+sc1 <- c("", "", "irr_str30","irr_str30", "", "" )
+sc2 <- c("", "", "irr_str40","irr_str40", "", "" )
+sc3 <- c("", "", "irr_str50","irr_str50", "", "" )
+sc4 <- c("", "", "irr_str30","", "", "" )
+sc5 <- c("", "", "irr_str40","", "", "" )
+sc6 <- c("", "", "irr_str50","", "", "" )
+sc7 <- c("", "", "","irr_str_30", "", "" )
+sc8 <- c("", "", "","irr_str_40", "", "" )
+sc9 <- c("", "", "","irr_str_50", "", "" )
+scbase <- c("", "", "","", "", "" )
+
+scenarios <-
+rbind(sc1, sc2, sc3, sc4, sc5, sc6, sc7, sc8, sc9, scbase)
   
 #1 Settings-----
 #1.1-Set time-----
@@ -16,46 +31,46 @@ setwd(model_files)
 
 setwd(model_scripts)
 
-yr_begin <- "2003"
-yr_end <- "2025" 
+yr_begin <- "1998"
+yr_end <- "2019" 
 
 source("Set_time.R")
 time(year_begin = yr_begin, year_end = yr_end, path = model_files)
 
 #1.2-Set Print-----
 #archivo print.prt
-shell.exec(paste0(model_files, "print.prt"))
+#shell.exec(paste0(model_files, "print.prt"))
 
 #las variables que necesitaria serian
 
 ##lulc file mgt_out
 ##area file hru.con
 ##yield file hru_pw
-##riego
+##riego file hru_wb
 
 #doc: mgt_out
-#asi que saco esos archivos a escala mensual, diaria y anual
+#asi que saco esos archivos a escala mensual y diaria
 
-setwd(model_files)
 
 #2 Decision Table----
 #2-debo ir al file lum.dtl
 #ahi le pongo una tabla de decision que defina mi rutina de riego
 #a implementar
 
-#Esto lo defino  solo en ese doc, para eso, debo primero ver con 
-#Francisco y Miguel que escenarios implementar teniendo en cuenta las rotaciones
-shell.exec(paste0(model_files, "lum.dtl"))
+#Esto lo defino  solo en ese doc, para eso
+#Por ahora los escenario que file cambian el umbral
+#en 0.3, 0.4 y 0.5, en base al 05 de claudio
+#shell.exec(paste0(model_files, "lum.dtl"))
 
 
 #3 Edit Rot Irrigation----
 #3-luego, voy a management.sch y edito la rotacion particular que quiero poner
 #lo primero que debe aparecer en op_typ, en la parte superior 
 #tambien puedo editar el resto de las operaciones de cada rotacion
-shell.exec(paste0(model_files, "management.sch"))
-
+#shell.exec(paste0(model_files, "management.sch"))
 
 setwd(model_scripts)
+
 source("irr_management.R")
 #Por ejemplo, si quiero asignarle a todas las rotaciones la misma irrigacion
 #con goteo
@@ -66,17 +81,17 @@ source("irr_management.R")
 #Si quiero diferenciar la irrigacion por rotaciones el tipo de irrigacion
 #Pongo esto:
 
-#irr_management_all(rot1 = "irr_sw40_unlim",
-#                   rot2 = "irr_sw30_unlim",
-#                   rot3 = "irr_sw20_unlim",
-#                   rot4 = "irr_sw10_unlim",
-#                   rot5 = "irr_sw35_unlim",
-#                   rot6 = "irr_sw25_unlim")
+# "" quiere decir que no se riega
+
+
+irr_management_all(rot1=scenarios[i,1],
+                   rot2=scenarios[i,2],
+                   rot3=scenarios[i,3],
+                   rot4=scenarios[i,4],
+                   rot5=scenarios[i,5],
+                   rot6=scenarios[i,6])
 
 #Primera prueba, despues puedo loopear
-irr_management(rutina="irr_str40_unlim")
-
-readline(prompt = "Press any key only if management scenarios are done and saved")
 
 ##Forma de escribir el archivo: 
 ##3.1 Elegir el nombre de la rutina de riego
@@ -88,16 +103,21 @@ readline(prompt = "Press any key only if management scenarios are done and saved
 
 #4 Run the Model----
 #4-Correr el modelo
+t1 <-Sys.time()
 shell.exec(paste0(model_files, "Rev59.3_64rel.exe"))
+#Sys.sleep(60*40) poner un tiempo que asegure la ejecucion
+t2 <- Sys.time()
+tiempo_corrida<- t2-t1; tiempo_corrida
 
 #5 Sacar Output----
 #5-Sacar los resultados de los archivos que necesite
 
 #las variables que necesitaria serian
-##5.1 Get LUSE-----
+#5.1 Get LUSE-----
+ #lulc file mgt_out
+ #shell.exec(paste0(model_files, "mgt_out.txt"))
 
-##lulc file mgt_out
-shell.exec(paste0(model_files, "mgt_out.txt"))
+t3<- Sys.time()
 
 mgt_out <- 
   read_table2(paste0(model_files, "mgt_out.txt"),
@@ -193,7 +213,7 @@ select(hru, date_begin, date_end, month_end, crop)
 
 ##5.2 Get Area----
 ##area file hru.con
-shell.exec(paste0(model_files, "hru.con"))
+#shell.exec(paste0(model_files, "hru.con"))
 
 
 n_hru <- read_table2(paste0(model_files, "hru.con"), skip=1) %>%
@@ -215,9 +235,9 @@ hrus_rotations <-
 ##5.4 Get Yield----
 ##yield file hru_pw
 
-shell.exec(paste0(model_files, "hru_pw_day.txt"))
+#shell.exec(paste0(model_files, "hru_pw_day.txt"))
 
-shell.exec(paste0(model_files, "hru_pw_mon.txt"))
+#shell.exec(paste0(model_files, "hru_pw_mon.txt"))
 
 
 hru_yield <-
@@ -248,16 +268,15 @@ plyr::join(mgt_out, hru_yield, by="hru" ) %>%
 ##5.6 Get Irrigation----
 ##riego
 
-shell.exec(paste0(model_files, "mgt_out.txt"))
+#shell.exec(paste0(model_files, "mgt_out.txt"))
 
-shell.exec(paste0(model_files, "mgt_out.txt"))
+#shell.exec(paste0(model_files, "mgt_out.txt"))
 #doc: mgt_out
 
 #"C:/SWAT/Florencia/CCa3/Scenarios/Default/TxtInOut/mgt_out.txt"
 #de aca saco el lulc, hacer funcion, es complicado
 
-shell.exec(paste0(model_files, "hru_wb_mon.txt"))
-"hru_wb_day.txt"
+#shell.exec(paste0(model_files, "hru_wb_mon.txt"))
   
 irr <- read_table2(paste0(model_files, "hru_wb_mon.txt"),
                    skip=1) %>%
@@ -297,13 +316,24 @@ read_table2(paste0(model_files, "channel_sd_mon.txt"),
          N_Concentration=(Nitrogen*1000000)/(flo_out*60*60*24*1000*30)
          )
 
+t4 <- Sys.time()
+
+tiempo_procesamiento <- t4-t3; tiempo_procesamiento 
+tiempo_total <- t4-t1; tiempo_total
+
+beepr::beep(sound=5)
+
 #6 Save Output ----
 
-setwd(model_scripts)
+setwd(paste0(model_scripts, "Data_Simulaciones_SWAT"))
+save.image(paste0(rownames(scenarios)[1], ".RData"))
 
-save.image("SWAT_Sim_05_Rot6.RData")
 
+
+#Old Saving
+save.image("SWAT_Sim_03_Rot1.RData")
 save.image("SWAT_Sim_Without_Irrigation.RData")
+
 
 
 

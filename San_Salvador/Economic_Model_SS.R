@@ -156,7 +156,6 @@ profit_data %>% select(profit_ha,yr ) %>% filter(hru==3)  %>%
 
 certainty_equivalent_ne(profit_vector = coso, rho=0.005)
 
-
 for(ara in ara_par){
  for (n_hru in hru_list) {
   
