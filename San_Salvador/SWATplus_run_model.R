@@ -84,12 +84,12 @@ source("irr_management.R")
 # "" quiere decir que no se riega
 
 
-irr_management_all(rot1=scenarios[i,1],
-                   rot2=scenarios[i,2],
-                   rot3=scenarios[i,3],
-                   rot4=scenarios[i,4],
-                   rot5=scenarios[i,5],
-                   rot6=scenarios[i,6])
+irr_management_all(rot1=scenarios[scenario,1],
+                   rot2=scenarios[scenario,2],
+                   rot3=scenarios[scenario,3],
+                   rot4=scenarios[scenario,4],
+                   rot5=scenarios[scenario,5],
+                   rot6=scenarios[scenario,6])
 
 #Primera prueba, despues puedo loopear
 
@@ -326,13 +326,13 @@ beepr::beep(sound=5)
 #6 Save Output ----
 
 setwd(paste0(model_scripts, "Data_Simulaciones_SWAT"))
-save.image(paste0(rownames(scenarios)[1], ".RData"))
+save.image(paste0(rownames(scenarios)[scenario], ".RData"))
 
 
 
 #Old Saving
-save.image("SWAT_Sim_03_Rot1.RData")
-save.image("SWAT_Sim_Without_Irrigation.RData")
+#save.image("SWAT_Sim_03_Rot1.RData")
+#save.image("SWAT_Sim_Without_Irrigation.RData")
 
 
 
