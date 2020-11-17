@@ -202,7 +202,7 @@ saveRDS(Excess_Days, paste0("Excess_Days_", str_remove( scenario, ".RData"), ".R
 
 #basin_CE_RP <- apply(resultados_hru, 2, sum)  
 
-save.image(paste0("Econ_Output_", str_remove( scenario, ".RData")))
+save.image(paste0("Econ_Output_", scenario))
 
 
 }  
@@ -216,8 +216,22 @@ mutate(Rotacion_riego=case_when(lu_mgt=="agrc3_lum" ~ 1,
 
 #TOTAL Gain----
 #(CE_irr/CE_sinirr)-1
+rm(list = ls())
+library(tidyverse)
+
+model_scripts<- "C:/Users/Usuario/Desktop/Git/Tesis/San_Salvador/"
 setwd(paste0(model_scripts, "Data_Simulaciones_Eco"))
-load()
+list.files(pattern = "RData")
+load("Econ_Output_SWAT_Sim_Without_Irrigation.RData")
+
+
+profit_data %>% head
+resultados_hru %>% head
+
+
+profit_data %>% select(profit_ha, Rotacion_riego ) %>%
+  filter(hru==n_hru)  %>% 
+  as.data.frame() %>%  select(profit_ha)
 #CE_2 is the CE of each scenario respect to base
 #but with the base scenario volatility
 
