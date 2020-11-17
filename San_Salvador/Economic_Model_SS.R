@@ -7,19 +7,20 @@ library(tidyverse)
 
 model_scripts<- "C:/Users/Usuario/Desktop/Git/Tesis/San_Salvador/"
 
-setwd(model_scripts)
-#dd
+
+
 scenarios <-
-list.files(model_scripts, pattern="RData"); scenarios
+list.files(pattern="RData"); scenarios
 
 for(scenario in scenarios){
   
 print(scenario)  
 
-setwd(model_scripts)  
+setwd(paste0(model_scripts, "Data_Simulaciones_SWAT"))
+
 load(scenario)
 
-}
+
 
 #environmental_output$P_Concentration
 
@@ -48,33 +49,29 @@ select(P_excess, N_excess)  %>%
 apply(2, function(x)round(sum(x)/(length(x)),2))   
 
 #Check if the environmental restictions are violated
+env_restriction_violation <-
 ifelse(Excess_Days>0.1,"TRUE","FALSE") %>% 
   as.logical() %>%
-  all()
+  all() ; env_restriction_violation
 
-#plot the profits for the whole period
+profit_data <-
+  profit_data %>%
+  mutate(Rotacion_riego=case_when(lu_mgt=="agrc3_lum" ~ 1,
+                                  lu_mgt=="agrc4_lum" ~ 6,
+                                  lu_mgt!="agrc3_lum" & lu_mgt!="agrc4_lum" ~ 0)) 
 
 #Fixed Cost=Fixed Prod Cost
 
 #save data
-setwd("C:/Users/Usuario/Desktop/Git/Tesis")
+setwd(paste0(model_scripts, "Data_Simulaciones_Eco"))
 
-save.image("Economic_Profit.RData")
+
+
 #Ut Fun, CE and RP----
 
-alpha <- 0.88 #Parameters from Kahneman-Tversky and 
-              #Adopted by Rosas, Sans and Arana
-#See "A parametric analysis of prospect theory's
-#functionals for the general population"
-#by Booij, Van Praag and Kuilen 2009
-#alpha range:0.22 (Camerer and ho 1994) to 1.01 (Fehr-Duda 2006)
-
-#interpretation: alpha defines the curvature
-#                of ut function 
-
 #vector profit para probar
-coso <- profit_data %>% select(profit_ha,yr ) %>% filter(hru==3)  %>% 
-        as.data.frame() %>%  select(profit_ha)
+#coso <- profit_data %>% select(profit_ha,yr ) %>% filter(hru==3)  %>% 
+#        as.data.frame() %>%  select(profit_ha)
 
 ne_utility <- function(value, rho=0.005){
   
@@ -91,8 +88,6 @@ ne_utility_whole <- function(profit_vector, rho=0.005){
   
   return(utility)
 }
-
-
 
 #
 certainty_equivalent_ne <- function(profit_vector, rho=0.005){
@@ -113,7 +108,6 @@ certainty_equivalent_ne <- function(profit_vector, rho=0.005){
 
 } 
 
-
 #Put the observed profit (E(X)) and CE to estimate risk premium
 #calculate the risk premium the farmer is 
 #willing to pay to obtain the certainty equivalent
@@ -133,28 +127,35 @@ risk_premium_ne <- function(profit_vector, rho=0.005){
   
 } 
 
- 
-
-
 #Computing CE----
 
 hru_list <-
   profit_data %>% select(hru) %>% unique() %>% 
   unlist() %>% as.list()
 
-ara_par <- seq(0.002, 0.009, by=0.001)
+#Ara parameters are defining using the range specified in 
+#Babcock Choi and Feinerman, 1993 (Risk and prob premiums for CARA utility functions)
+
+#This range also is similar (and quite wider) to the range specified 
+#in Hardaker, Richardson, Lien and Schumann (2003): 
+#Stoch aff analysis with risk aversion bounds, a simplified approach
+
+ara_par <- seq(0.000, 0.05, by=0.007) #eight parameters, include risk neutral 0
+
+#
+
 
 ce_ne <- matrix(nrow = hru_list %>% length(),
-                ncol=8 ) 
+                ncol= length(ara_par)) 
 
 rp_ne <- matrix(nrow = hru_list %>% length(),
-                ncol=8)
+                ncol=length(ara_par))
 
-coso <-
-profit_data %>% select(profit_ha,yr ) %>% filter(hru==3)  %>% 
-  as.data.frame() %>%  select(profit_ha)
+#coso <-
+#profit_data %>% select(profit_ha,yr ) %>% filter(hru==3)  %>% 
+#  as.data.frame() %>%  select(profit_ha)
 
-certainty_equivalent_ne(profit_vector = coso, rho=0.005)
+#create an index variable which indicates the relevant rotations
 
 for(ara in ara_par){
  for (n_hru in hru_list) {
@@ -185,20 +186,28 @@ print(c(ce_ne[match( n_hru, hru_list), match(ara, ara_par)],
 }
 
 resultados_hru <-
-  cbind(ce_ne, ce_pow, rp_ne, rp_pow) %>%
+  cbind(ce_ne, ce_pow) %>%
   as.data.frame(); View(resultados_hru)
 
 
-res_names<- c(paste0("ce_ne_", rac_par), paste0("ce_pow_", rac_par),
-              paste0("rp_ne_", rac_par), paste0("rp_now_", rac_par)
-              )
+res_names<- c(paste0("ce_ne_", rac_par),
+              paste0("rp_ne_", rac_par))
 
 colnames(resultados_hru)<- res_names
 
-basin_utility <-  
+saveRDS(resultados_hru, paste0("Econ_Output_HRU_", scenario, ".RDS"))
+saveRDS(env_restriction_violation, paste0("Env_Restriction_Violation_", scenario, ".RDS") )
+saveRDS(environmental_output, paste0("Env_Output_", scenario, ".RDS") )
+saveRDS(Excess_Days, paste0("Excess_Days_", scenario, ".RDS") )
+
+#basin_CE_RP <- apply(resultados_hru, 2, sum)  
+
+save.image(paste0("Econ_Output_", scenario))
+
+}  
 
 
-  
+
 #TOTAL Gain----
 #(CE_irr/CE_sinirr)-1
 
