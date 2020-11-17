@@ -3,11 +3,11 @@
 
 rm(list = ls())
 
+#Load Data----
 library(tidyverse)
 
 model_scripts<- "C:/Users/Usuario/Desktop/Git/Tesis/San_Salvador/"
-
-
+setwd(paste0(model_scripts, "Data_Simulaciones_SWAT"))
 
 scenarios <-
 list.files(pattern="RData"); scenarios
@@ -186,31 +186,38 @@ print(c(ce_ne[match( n_hru, hru_list), match(ara, ara_par)],
 }
 
 resultados_hru <-
-  cbind(ce_ne, ce_pow) %>%
+  cbind(ce_ne, rp_ne) %>%
   as.data.frame(); View(resultados_hru)
 
 
-res_names<- c(paste0("ce_ne_", rac_par),
-              paste0("rp_ne_", rac_par))
+res_names<- c(paste0("ce_ne_", ara_par),
+              paste0("rp_ne_", ara_par))
 
 colnames(resultados_hru)<- res_names
 
-saveRDS(resultados_hru, paste0("Econ_Output_HRU_", scenario, ".RDS"))
-saveRDS(env_restriction_violation, paste0("Env_Restriction_Violation_", scenario, ".RDS") )
-saveRDS(environmental_output, paste0("Env_Output_", scenario, ".RDS") )
-saveRDS(Excess_Days, paste0("Excess_Days_", scenario, ".RDS") )
+saveRDS(resultados_hru, paste0("Econ_Output_HRU_", str_remove( scenario, ".RData"), ".RDS"))
+saveRistDS(env_restriction_violation, paste0("Env_Restriction_Violation_", str_remove( scenario, ".RData"), ".RDS") )
+saveRDS(environmental_output, paste0("Env_Output_", str_remove( scenario, ".RData"), ".RDS") )
+saveRDS(Excess_Days, paste0("Excess_Days_", str_remove( scenario, ".RData"), ".RDS") )
 
 #basin_CE_RP <- apply(resultados_hru, 2, sum)  
 
-save.image(paste0("Econ_Output_", scenario))
+save.image(paste0("Econ_Output_", str_remove( scenario, ".RData")))
+
 
 }  
 
+hru_info <-
+hru_info %>%
+mutate(Rotacion_riego=case_when(lu_mgt=="agrc3_lum" ~ 1,
+                                lu_mgt=="agrc4_lum" ~ 6,
+                                lu_mgt!="agrc3_lum" & lu_mgt!="agrc4_lum" ~ 0))
 
 
 #TOTAL Gain----
 #(CE_irr/CE_sinirr)-1
-
+setwd(paste0(model_scripts, "Data_Simulaciones_Eco"))
+load()
 #CE_2 is the CE of each scenario respect to base
 #but with the base scenario volatility
 
