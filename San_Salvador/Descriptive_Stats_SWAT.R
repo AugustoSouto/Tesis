@@ -1,19 +1,26 @@
 rm(list = ls())
+
+#Inicio-----
+
 library(tidyverse)
 
 model_scripts<- "C:/Users/Usuario/Desktop/Git/Tesis/San_Salvador/"
 
-setwd(model_scripts)
+graphs_dir<- "C:/Users/Usuario/Desktop/Git/Tesis/San_Salvador/Graficos_Salidas"
+
+setwd(paste0(model_scripts, "Data_Simulaciones_SWAT"))
 
 scenarios <-
-  list.files(model_scripts, pattern="RData"); scenarios
+  list.files(paste0(model_scripts, "Data_Simulaciones_SWAT"), pattern="RData"); scenarios
 
 for(scenario in scenarios){
   
   print(scenario)  
-  setwd(model_scripts)  
+  setwd(paste0(model_scripts, "Data_Simulaciones_SWAT"))
   load(scenario)
+
   
+#Area----
   area_plot <-
     ggplot(areas, aes(x=area))+
     geom_histogram()+
@@ -21,7 +28,7 @@ for(scenario in scenarios){
     ylab("HRUs")
   
   ggsave(paste0("area_plot_", str_remove( scenario, ".RData"), ".jpeg"),
-         path = model_scripts
+         path = graphs_dir
          #width =
          #height =
          )  
@@ -33,7 +40,7 @@ for(scenario in scenarios){
     ylab("HRUs")
   
   ggsave(paste0("area_plot_rot", str_remove( scenario, ".RData"), ".jpeg"),
-         path = model_scripts
+         path = graphs_dir
          #width =
          #height =
          )  
@@ -42,6 +49,7 @@ for(scenario in scenarios){
   Ph_lim <- 0.25
   N_lim <- 10
   
+#Nitrogeno----
   
   ggplot(environmental_output %>%
            filter(channel==2) %>% 
@@ -65,11 +73,26 @@ for(scenario in scenarios){
           text = element_text(size=7.5))
   
   ggsave(paste0("Nitrogeno", str_remove( scenario, ".RData"), ".jpeg"),
-         path = model_scripts
+         path = graphs_dir
          #width =
          #height =
   )  
   
+  ggplot(environmental_output %>%
+           filter(channel==2) %>% 
+           select( N_Concentration, date_env) , aes(x=N_Concentration))+
+    geom_histogram() +
+#    geom_vline(aes(xintercept = N_lim,
+#                   colour="Normativa")) 
+  
+  ggsave(paste0("Nitrogeno_hist", str_remove( scenario, ".RData"), ".jpeg"),
+         path = graphs_dir
+         #width =
+         #height =
+  )  
+  
+  
+  #Fosforo----
   
   ggplot(environmental_output %>%
            filter(channel==2) %>% 
@@ -94,10 +117,29 @@ for(scenario in scenarios){
           text = element_text(size=7.5))
   
   ggsave(paste0("Fosforo", str_remove( scenario, ".RData"), ".jpeg"),
-         path = model_scripts
+         path = graphs_dir
          #width =
          #height =
   )  
+  
+  
+
+  
+  ggplot(environmental_output %>%
+           filter(channel==2) %>% 
+           select( P_Concentration, date_env) , aes(x=P_Concentration))+
+    geom_histogram() 
+  #  geom_vline(aes(xintercept = Ph_lim,
+  #                colour="Normativa")) 
+  
+  ggsave(paste0("Fosforo_hist", str_remove( scenario, ".RData"), ".jpeg"),
+         path = graphs_dir
+         #width =
+         #height =
+  )  
+  
+    
+  #Caudal-----
   
   ggplot(environmental_output %>%
            filter(channel==2) %>% 
@@ -118,10 +160,40 @@ for(scenario in scenarios){
           text = element_text(size=7.5))
   
   ggsave(paste0("Caudal", str_remove( scenario, ".RData"), ".jpeg"),
-         path = model_scripts
+         path = graphs_dir
+         #width =
+         #height =
+  )
+  
+  
+  ggplot(environmental_output %>%
+           filter(channel==2) %>% 
+           select( flo_out, date_env) , aes(x=flo_out))+
+    geom_histogram()
+  
+  ggsave(paste0("Caudal_hist", str_remove( scenario, ".RData"), ".jpeg"),
+         path = graphs_dir
          #width =
          #height =
   )  
+  
+  
+  #Profit_ha-----
+  
+  ggplot(profit_data , aes(x=profit_ha))+
+    geom_histogram() +
+    facet_wrap(~yr) +
+    geom_vline(aes(xintercept = 0,
+                   colour="Perdida/Beneficio")) +
+    xlim(-1000, 1000)
+  
+  ggsave(paste0("Profits_Year", str_remove( scenario, ".RData"), ".jpeg"),
+         path = graphs_dir
+         #width =
+         #height =
+  )  
+  
+  
 
   ggplot(  profit_data %>% group_by(hru) %>%
              summarise(profit_ha_tot=sum(profit_ha)) %>%
@@ -131,38 +203,60 @@ for(scenario in scenarios){
     geom_histogram()+
     facet_wrap(~lu_mgt)
   
+  ggsave(paste0("Profit_ha_mean", str_remove( scenario, ".RData"), ".jpeg"),
+         path = graphs_dir
+         #width =
+         #height =
+  )  
+  
+
+    
   ggplot(profit_data %>% group_by(hru) %>%
            summarise(profit_ha_mean=mean(profit_ha)) %>%
            plyr::join(hrus_rotations, by="hru"),aes(x=profit_ha_mean))+
     geom_histogram() +
     facet_wrap(~lu_mgt)
   
-  profit_data %>% group_by(yr) %>%
-    summarise(profit_ha_mean=mean(profit_ha)) %>%
-    write_csv(paste0("Profits_Year", str_remove( scenario, ".RData"))
-      ,path = model_scripts
-      )
   
-  ggplot(profit_data , aes(x=profit_ha))+
+  ggsave(paste0("Prof_ha", str_remove( scenario, ".RData"), ".jpeg"),
+         path = graphs_dir
+         #width =
+         #height =
+  )  
+  
+  
+#  profit_data %>% group_by(yr) %>%
+#    summarise(profit_ha_mean=mean(profit_ha)) %>%
+  #    write_csv(paste0("Profits_Year", str_remove( scenario, ".RData")),path = graphs_dir
+  #      )
+  
+  hru_yield <-  hru_yield %>% mutate(yr=lubridate::year(date_yield),
+                                     mon= lubridate::month(date_yield))
+
+  #Yield----
+  
+  ggplot(hru_yield , aes(x=yield))+
     geom_histogram() +
-    facet_wrap(~yr) +
-    geom_vline(aes(xintercept = 0,
-                   colour="Perdida/Beneficio")) +
-    xlim(-1000, 1000)
+    facet_wrap(~yr)
   
-ggsave(paste0("Profits_Year", str_remove( scenario, ".RData"), ".jpeg"),
-         path = model_scripts
+  ggsave(paste0("Yield_Year", str_remove( scenario, ".RData"), ".jpeg"),
+         path = graphs_dir
          #width =
          #height =
   )  
   
-  ggsave(paste0("Profit_ha_mean", str_remove( scenario, ".RData"), ".jpeg"),
-         path = model_scripts
+  
+  ggplot(hru_yield , aes(x=yield))+
+    geom_histogram() +
+    facet_wrap(~mon)
+  
+  ggsave(paste0("Yield_Month", str_remove( scenario, ".RData"), ".jpeg"),
+         path = graphs_dir
          #width =
          #height =
   )  
   
-    
+
   
     
   
