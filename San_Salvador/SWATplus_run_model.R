@@ -84,6 +84,14 @@ source("irr_management.R")
 # "" quiere decir que no se riega
 
 
+irr_management_all(rot1=sc6[1],
+                   rot2=sc6[2],
+                   rot3=sc6[3],
+                   rot4=sc6[4],
+                   rot5=sc6[5],
+                   rot6=sc6[6])
+
+
 irr_management_all(rot1=scenarios[scenario,1],
                    rot2=scenarios[scenario,2],
                    rot3=scenarios[scenario,3],
