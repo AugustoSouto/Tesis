@@ -89,16 +89,19 @@ ne_utility_whole <- function(profit_vector, rho=0.005){
   return(utility)
 }
 
-#
+#the input is a data.table object, an alternative is to
+#import a c++ function that implements it, 
 certainty_equivalent_ne <- function(profit_vector, rho=0.005){
   
   inv_rho<- 1/-rho
   
   if(rho==0){
-    ce <- profit_vector %>% unlist() %>% mean()
+    ce <- as.numeric(profit_vector[,lapply(.SD, mean),]) 
     }else{
 
-   suma<- sapply(profit_vector, function(x){exp(-rho*x)}) %>% sum()
+   suma<- sum(
+              sapply(profit_vector, function(x){exp(-rho*x)})
+             )
     
    ce <- log( suma/dim(profit_vector)[1])*(1/(-1*rho)) 
 
@@ -106,7 +109,9 @@ certainty_equivalent_ne <- function(profit_vector, rho=0.005){
   
   return(ce)
 
-} 
+}
+
+
 
 #Put the observed profit (E(X)) and CE to estimate risk premium
 #calculate the risk premium the farmer is 
@@ -115,7 +120,8 @@ certainty_equivalent_ne <- function(profit_vector, rho=0.005){
 
 risk_premium_ne <- function(profit_vector, rho=0.005){
   
-  exp_val <- profit_vector %>% sum
+  exp_val <-as.numeric(profit_vector[,lapply(.SD, mean),
+                               ][,"profit_ha"]) 
   
   certainty_equivalent <-
   certainty_equivalent_ne(profit_vector=profit_vector,
@@ -156,33 +162,30 @@ rp_ne <- matrix(nrow = hru_list %>% length(),
 #  as.data.frame() %>%  select(profit_ha)
 
 #create an index variable which indicates the relevant rotations
+profit_data <-
+data.table::as.data.table(profit_data)
 
 for(ara in ara_par){
  for (n_hru in hru_list) {
   
+   
 ce_ne[match( n_hru, hru_list), match(ara, ara_par)] <-  
 certainty_equivalent_ne(profit_vector = 
-                        profit_data %>% select(profit_ha,yr ) %>%
-                        filter(hru==n_hru)  %>% 
-                        as.data.frame() %>%  select(profit_ha),
-                        rho=ara
-                       )
+                          profit_data[,c("profit_ha", "hru"),
+                                      ][hru==n_hru
+                                       ][,"profit_ha"],
+                                      rho=ara) 
 
-
-
-rp_ne[match( n_hru, hru_list), match(ara, ara_par)] <-  
-  risk_premium_ne(profit_vector = 
-                            profit_data %>% select(profit_ha,yr ) %>% filter(hru==n_hru)  %>% 
-                            as.data.frame() %>%  select(profit_ha),
-                  rho=ara)
 print(ara)
 print(n_hru)
+print(ce_ne[match( n_hru, hru_list), match(ara, ara_par)])  
 
-print(c(ce_ne[match( n_hru, hru_list), match(ara, ara_par)],
-        rp_ne[match( n_hru, hru_list), match(ara, ara_par)]
-      ))  
+  }
+ }
 
-}
+rp_ne[,1] <- 0  
+for(i in 2:dim(rp_ne)[2]){
+  rp_ne[,i] <- ce_ne[,1]-ce_ne[,i]  
 }
 
 resultados_hru <-
@@ -196,7 +199,7 @@ res_names<- c(paste0("ce_ne_", ara_par),
 colnames(resultados_hru)<- res_names
 
 saveRDS(resultados_hru, paste0("Econ_Output_HRU_", str_remove( scenario, ".RData"), ".RDS"))
-saveRistDS(env_restriction_violation, paste0("Env_Restriction_Violation_", str_remove( scenario, ".RData"), ".RDS") )
+saveRDS(env_restriction_violation, paste0("Env_Restriction_Violation_", str_remove( scenario, ".RData"), ".RDS") )
 saveRDS(environmental_output, paste0("Env_Output_", str_remove( scenario, ".RData"), ".RDS") )
 saveRDS(Excess_Days, paste0("Excess_Days_", str_remove( scenario, ".RData"), ".RDS") )
 
@@ -207,31 +210,12 @@ save.image(paste0("Econ_Output_", scenario))
 
 }  
 
+
+
 hru_info <-
 hru_info %>%
 mutate(Rotacion_riego=case_when(lu_mgt=="agrc3_lum" ~ 1,
                                 lu_mgt=="agrc4_lum" ~ 6,
                                 lu_mgt!="agrc3_lum" & lu_mgt!="agrc4_lum" ~ 0))
 
-
-#TOTAL Gain----
-#(CE_irr/CE_sinirr)-1
-rm(list = ls())
-library(tidyverse)
-
-model_scripts<- "C:/Users/Usuario/Desktop/Git/Tesis/San_Salvador/"
-setwd(paste0(model_scripts, "Data_Simulaciones_Eco"))
-list.files(pattern = "RData")
-load("Econ_Output_SWAT_Sim_Without_Irrigation.RData")
-
-
-profit_data %>% head
-resultados_hru %>% head
-
-
-profit_data %>% select(profit_ha, Rotacion_riego ) %>%
-  filter(hru==n_hru)  %>% 
-  as.data.frame() %>%  select(profit_ha)
-#CE_2 is the CE of each scenario respect to base
-#but with the base scenario volatility
 
