@@ -18,6 +18,9 @@ for(scenario in scenarios){
   
   load(scenario)
   
+  profit_data <-
+    data.table::as.data.table(profit_data)
+  
   hru_list <-
     profit_data %>% select(hru) %>% unique() %>% 
     unlist() %>% as.list()
@@ -29,14 +32,10 @@ for(scenario in scenarios){
     print(n_hru)
     
     hru_prof_params[ match( n_hru, hru_list), 1] <-
-      profit_data %>% select(profit_ha) %>%
-      filter(hru==n_hru)  %>% 
-      as.data.frame() %>%  select(profit_ha) %>% unlist() %>% mean
+      profit_data[,c("profit_ha", "hru")][hru==n_hru][,lapply(.SD, mean),][,"profit_ha"] %>% as.numeric()
     
     hru_prof_params[ match( n_hru, hru_list), 2] <-
-      profit_data %>% select(profit_ha ) %>%
-      filter(hru==n_hru)  %>% 
-      as.data.frame() %>%  select(profit_ha) %>% unlist() %>% sd
+      profit_data[,c("profit_ha", "hru")][hru==n_hru][,lapply(.SD, sd),][,"profit_ha"] %>% as.numeric()
   }
   
 hru_prof_params <-  
