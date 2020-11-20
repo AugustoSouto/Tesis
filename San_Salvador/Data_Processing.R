@@ -125,7 +125,6 @@ for(s in scenarios){
                irr_yr,
                by=c("hru", "yr")
     ) %>% 
-    select(-irr_sum) %>%
     plyr::join(areas,by="hru") %>%
     mutate(irr_cost=replace_na(irr_cost,0),
            irr_cost_ha=round(irr_cost/area,2)) %>%

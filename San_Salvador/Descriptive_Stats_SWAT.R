@@ -81,7 +81,7 @@ for(scenario in scenarios){
   ggplot(environmental_output %>%
            filter(channel==2) %>% 
            select( N_Concentration, date_env) , aes(x=N_Concentration))+
-    geom_histogram() +
+    geom_histogram() 
 #    geom_vline(aes(xintercept = N_lim,
 #                   colour="Normativa")) 
   
@@ -256,7 +256,37 @@ for(scenario in scenarios){
          #height =
   )  
   
+  
+  ggplot(profit_data , aes(x=irr_sum))+
+    geom_histogram() +
+    facet_wrap(~yr)
+  
+  ggsave(paste0("Irr_yr", str_remove( scenario, ".RData"), ".jpeg"),
+         path = graphs_dir
+         #width =
+         #height =
+  )  
+  
 
+  ggplot(profit_data %>% filter(irr_cost_ha>0) , aes(x=irr_cost_ha))+
+    geom_histogram() +
+    facet_wrap(~yr)
+  
+  ggsave(paste0("Irr_yr_cost", str_remove( scenario, ".RData"), ".jpeg"),
+         path = graphs_dir
+         #width =
+         #height =
+  )  
+  
+  ggplot(profit_data %>% mutate(irr_ha=irr_sum/area) , aes(x=irr_ha))+
+    geom_histogram() +
+    facet_wrap(~yr)
+  
+  ggsave(paste0("Irr_yr_ha", str_remove( scenario, ".RData"), ".jpeg"),
+         path = graphs_dir
+         #width =
+         #height =
+  )  
   
     
   
