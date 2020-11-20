@@ -1,10 +1,13 @@
-#Join Data----
+#ANALISIS DE ESCENARIOS----
 #(CE_irr/CE_sinirr)-1
 rm(list = ls())
 
 library(tidyverse)
 
+#CARGAR DATOS----
 model_scripts<- "C:/Users/Usuario/Desktop/Git/Tesis/San_Salvador/"
+graphs_dir<- "C:/Users/Usuario/Desktop/Git/Tesis/San_Salvador/Graficos_Salidas"
+
 setwd(paste0(model_scripts, "Data_Simulaciones_Eco"))
 list.files(pattern = "RDS")
 #load("Econ_Output_SWAT_Sim_Without_Irrigation.RData")
@@ -50,9 +53,21 @@ parameters <-
   parameters %>% mutate(HRU=as.numeric(HRU)) %>% 
   arrange(HRU)
 
+#PROFITS MEDIA Y SD----
 apply(parameters[,-1], 2, mean)
-apply(parameters[,seq(2,20, by=2)], 2, mean)
-apply(parameters[,seq(3,21, by=2)], 2, mean)
+
+#media de los profits 
+#regar solo la rot 1 parece lo mejor, el parametro 05 es el mas ajustado
+#esto va en linea con el parametro sugerido por Claudio García
+
+#los 3 escenarios de riego no parecen ser mejor que el base para rot 6
+apply(parameters[,seq(2,20, by=2)], 2, mean) %>% sort(decreasing = TRUE)
+
+#desviacion estandar de los profits
+#la variabilidad mejora en casi todos los escenarios
+#el base solo es mejor que los otros escenarios 
+#para riego en rot 6 con parametro 04 y 05
+apply(parameters[,seq(3,21, by=2)], 2, mean) %>% sort(decreasing = FALSE)
 
 
 #Promedio y Varianza Yields por escenario----
@@ -63,15 +78,15 @@ hru_info <-
 parameters <- 
   plyr::join( parameters, hru_info[,-c(2, 3)], by="HRU"); View(parameters)
 
+#MEDIA SOLO EN ROTACIONES 1 Y 6
 apply(parameters[,c(seq(2,20, by=2),22)] %>% filter(Rotacion_riego!=0)
-      , 2, mean)
+      , 2, mean) %>% sort(decreasing = TRUE)
+
 apply(parameters[,c(seq(2,20, by=2),22)] %>% filter(Rotacion_riego==1)
-      , 2, mean)
+      , 2, mean) %>% sort(decreasing = TRUE)
+
 apply(parameters[,c(seq(2,20, by=2),22)] %>% filter(Rotacion_riego==6)
-      , 2, mean)
-
-
-apply(parameters[,seq(3,21, by=2)], 2, mean)
+      , 2, mean) %>% sort(decreasing = TRUE)
 
 
 #CE por Escenario------
@@ -116,59 +131,218 @@ ceq_rp <-
 ceq_rp %>% select("HRU", "Rotacion_riego",contains("ce_ne")) %>%
   apply(2, sum)
 
+#CE SUM SCENARIO----
 ceq_rp %>% select("HRU", "Rotacion_riego",contains("ce_ne")) %>%
-  filter(Rotacion_riego==1) %>% select(-c("HRU", "Rotacion_riego")) %>%
+  filter(Rotacion_riego!=0) %>% select(-c("HRU", "Rotacion_riego")) %>%
   apply(2, sum) %>% sort(decreasing = TRUE)
 
+#CE MEAN SCENARIO----
+ceq_rp %>% select("HRU", "Rotacion_riego",contains("ce_ne")) %>%
+  filter(Rotacion_riego!=0) %>% select(-c("HRU", "Rotacion_riego")) %>%
+  apply(2, mean) %>% sort(decreasing = TRUE)
+
 rname <- paste0("ARA_",seq(0, 0.5, by=0.07)) %>% as.character()
+
 cname <- c("Rot_1_0.3", "Rot_1y6_0.3","Rot_6_0.3",
            "Rot_1_0.4", "Rot_1y6_0.4","Rot_6_0.4",
            "Rot_1_0.5", "Rot_1y6_0.5","Rot_6_0.5",
            "Base_Sin_Riego")
 
-coso<-
+resultados<-
   ceq_rp %>% select("HRU", "Rotacion_riego",contains("ce_ne")) %>%
   filter(Rotacion_riego!=0) %>% select(-c("HRU", "Rotacion_riego")) %>%
   apply(2, sum) %>%  matrix(nrow=8, ncol=10) %>% 
   as.data.frame(row.names=rname)
 
-colnames(coso)<-cname
+resultados_mean<-
+  ceq_rp %>% select("HRU", "Rotacion_riego",contains("ce_ne")) %>%
+  filter(Rotacion_riego!=0) %>% select(-c("HRU", "Rotacion_riego")) %>%
+  apply(2,mean) %>%  matrix(nrow=8, ncol=10) %>% 
+  as.data.frame(row.names=rname)
+
+colnames(resultados)<-cname
+colnames(resultados_mean)<-cname
 
 
-coso2 <-
-  reshape2::melt(data.table::setDT(coso, keep.rownames = TRUE), "rn") 
-colnames(coso2)<- c("ARA", "Escenario", "CE")
+resultados2 <-
+  reshape2::melt(data.table::setDT(resultados, keep.rownames = TRUE), "rn") 
+
+resultados_mean2 <-
+  reshape2::melt(data.table::setDT(resultados_mean, keep.rownames = TRUE), "rn") 
+
+colnames(resultados2)<- c("ARA", "Escenario", "CE")
+colnames(resultados_mean2)<- c("ARA", "Escenario", "CE")
 
 library(scales)
-ggplot(coso2 %>% filter(ARA!="ARA_0"), aes(x=ARA, y=Escenario, fill=CE))+
-  geom_tile()+
-  scale_fill_gradient(low = "yellow", high = "red", labels=comma)
 
-ggplot(coso2 %>% filter(ARA!="ARA_0") %>%
+#HEATMAP SCENARIO&ARA----
+ggplot(resultados2 %>% filter(ARA!="ARA_0"), aes(x=ARA, y=Escenario, fill=CE))+
+  geom_tile()+
+  scale_fill_gradient(low = "yellow", high = "red", labels=comma)+
+  theme(axis.text.x =element_text(angle=90,
+                                  hjust=1),
+        text = element_text(size=7.5))
+
+ggsave("CE_Calor_ARA.jpeg",
+       path = graphs_dir
+       #width =
+       #height =
+)
+
+#HEATMAP MEAN----
+ggplot(resultados_mean2 %>% filter(ARA!="ARA_0"), aes(x=ARA, y=Escenario, fill=CE))+
+  geom_tile()+
+  scale_fill_gradient(low = "yellow", high = "red", labels=comma)+
+  theme(axis.text.x =element_text(angle=90,
+                                  hjust=1),
+        text = element_text(size=7.5))
+
+ggsave("CE_Calor_ARA_mean.jpeg",
+       path = graphs_dir
+       #width =
+       #height =
+)
+
+#SCENARIO CE FACET-----
+
+ggplot(resultados2 %>% filter(ARA!="ARA_0") %>%
          mutate(ARA=str_remove(ARA, "ARA_")), aes(x=ARA, y=CE, col="red"))+
   geom_point()+
   facet_wrap(~Escenario, nrow=4, ncol=3)+
-  scale_y_continuous(labels = comma)
+  scale_y_continuous(labels = comma)+
+  theme(axis.text.x =element_text(angle=90,
+                                  hjust=1),
+        text = element_text(size=12),
+        legend.position="none") + labs(x="Escenario", y="CE")
 
+ggsave("CE_Cuenca_ARA.jpeg",
+       path = graphs_dir
+       #width =
+       #height =
+)
 
-ggplot(coso2 %>% filter(ARA!="ARA_0") %>%
-         mutate(ARA=str_remove(ARA, "ARA_")), aes(x=Escenario, y=CE, col="red"))+
+#SCENARIO MEAN CE FACET-----
+ggplot(resultados_mean2 %>% filter(ARA!="ARA_0") %>%
+         mutate(ARA=str_remove(ARA, "ARA_")), aes(x=ARA, y=CE, col="red"))+
+  geom_point()+
+  facet_wrap(~Escenario, nrow=4, ncol=3)+
+  scale_y_continuous(labels = comma)+
+  theme(axis.text.x =element_text(angle=90,
+                                  hjust=1),
+        text = element_text(size=12),
+        legend.position="none") + labs(x="Escenario", y="CE")
+
+ggsave("CE_Cuenca_ARA_mean.jpeg",
+       path = graphs_dir
+       #width =
+       #height =
+       )
+
+#ARA CE FACET-----
+ggplot(coso2 %>% filter(ARA!="ARA_0") %>% mutate(ARA=str_remove(ARA, "ARA_")), 
+       aes(x=reorder(Escenario, -CE), y=CE, col=CE))+
   geom_point()+
   facet_wrap(~ARA, ncol=2, scales = "free_y")+
   scale_y_continuous(labels = comma)+
   theme(axis.text.x =element_text(angle=90,
                                   hjust=1),
-        text = element_text(size=7.5))
+        text = element_text(size=7.5),
+        legend.position="none") + labs(x="Escenario", y="CE")
 
-
-plotly::ggplotly(
-  ggplot(coso2 %>% filter(ARA!="ARA_0") %>%
-           mutate(ARA=str_remove(ARA, "ARA_")), aes(x=ARA, y=CE))+
-    geom_line(aes(colour=Escenario, group=Escenario))+
-    scale_y_continuous(labels = comma)+
-    geom_jitter()
+ggsave("CE_Cuenca_ARA2.jpeg",
+       path = graphs_dir
+       #width =
+       #height =
 )
 
+#ARA CE MEAN FACET -----
+ggplot(resultados_mean2 %>% filter(ARA!="ARA_0") %>%
+         mutate(ARA=str_remove(ARA, "ARA_")), aes(x=reorder(Escenario,-CE), y=CE, col=CE))+
+  geom_point()+
+  facet_wrap(~ARA, ncol=2, scales = "free_y")+
+  scale_y_continuous(labels = comma)+
+  theme(axis.text.x =element_text(angle=90,
+                                  hjust=1),
+        text = element_text(size=7.5),
+        legend.position="none") + labs(x="Escenario", y="CE")
+
+ggsave("CE_Cuenca_ARA2_mean.jpeg",
+       path = graphs_dir
+       #width =
+       #height =
+)
+
+#CE BOXPLOT----
+
+ceq_rp %>% select("HRU", "Rotacion_riego",contains("ce_ne")) %>%
+  filter(Rotacion_riego!=0) %>% select(-c("HRU", "Rotacion_riego")) %>%
+  apply(2, sum) %>% sort(decreasing = TRUE) 
+
+data_ce <-
+ceq_rp %>% select("HRU", "Rotacion_riego",contains("ce_ne")) %>%
+  filter(Rotacion_riego!=0) %>% select(-c("HRU", "Rotacion_riego")) %>%
+  reshape2::melt()  
+
+colnames(data_ce)<-c("Escenario", "CE")
+
+data_ce <-
+data_ce %>% mutate(ARA=case_when(str_detect(Escenario, "ne_0.049") ~ "0.049",
+                                 str_detect(Escenario, "ne_0.042") ~ "0.042",
+                                 str_detect(Escenario, "ne_0.035") ~ "0.035",
+                                 str_detect(Escenario, "ne_0.028") ~ "0.028",
+                                 str_detect(Escenario, "ne_0.021") ~ "0.021",
+                                 str_detect(Escenario, "ne_0.014") ~ "0.014",
+                                 str_detect(Escenario, "ne_0.007") ~ "0.007",
+                                 str_detect(Escenario, "ne_0") ~ "0")) %>%
+
+  mutate(Scenario=case_when(str_detect(Escenario, "03_Rot1") ~ "03_Rot1",
+                       str_detect(Escenario, "03_Rot1y6") ~ "03_Rot1y6",
+                       str_detect(Escenario, "03_Rot6") ~ "03_Rot6",
+                       str_detect(Escenario, "04_Rot1") ~ "04_Rot1",
+                       str_detect(Escenario, "04_Rot1y6") ~ "04_Rot1y6",
+                       str_detect(Escenario, "04_Rot6") ~ "04_Rot6",
+                       str_detect(Escenario, "05_Rot1") ~ "05_Rot1",
+                       str_detect(Escenario, "05_Rot1y6") ~ "05_Rot1y6",
+                       str_detect(Escenario, "05_Rot6") ~ "05_Rot6",
+                       str_detect(Escenario, "Without_Irrigation") ~ "Without_Irrigation")) %>%
+  select(-Escenario) %>% rename(Escenario=Scenario)
+                     
+                        
+ggplot(data_ce, aes(x=Escenario, y=CE))+
+  geom_boxplot()+
+  facet_wrap(~ARA, ncol=2, scales = "free_y")+
+  theme(axis.text.x =element_text(angle=90,
+                                  hjust=1),
+        text = element_text(size=7.5),
+        legend.position="none") + labs(x="Escenario", y="CE")
+
+ggplot(data_ce, aes(x=reorder(Escenario,-CE), y=CE))+
+  geom_boxplot()+
+  facet_wrap(~ARA, ncol=2, scales = "free_y")+
+  theme(axis.text.x =element_text(angle=90,
+                                  hjust=1),
+        text = element_text(size=10),
+        legend.position="none") + labs(x="Escenario", y="CE")+
+  scale_y_continuous(limits = quantile(data_ce$CE, c(0.01, 0.99)))
+
+
+
+
+
+
+
+
+
+ggplot(resultados_mean2 %>% filter(ARA!="ARA_0") %>%
+         mutate(ARA=str_remove(ARA, "ARA_")), aes(fct_reorder(Escenario,-CE), CE, col=CE))+
+  geom_point()+
+  facet_wrap(~ARA, ncol=2, scales = "free_y")+
+  scale_y_continuous(labels = comma)+
+  theme(axis.text.x =element_text(angle=90,
+                                  hjust=1),
+        text = element_text(size=7.5),
+        legend.position="none")+
+  labs(x="Escenario", y="CE")
 
 
 
