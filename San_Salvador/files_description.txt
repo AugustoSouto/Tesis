@@ -1,3 +1,36 @@
+################SCRIPTS####################
+1-SWATplus_run_model.R *implementa la corrida
+                        en SWAT y extrae los
+						datos necesarios
+						
+2-Data_Processing.R *utiliza los datos de las
+                     corridas y los procesa
+					 usando precios y costos
+					 
+3-Descriptive_Stats_SWAT.R *utiliza los datos
+                          de los anteriores scripts
+                          y grafica las ppales variables
+						  
+4-Profit_Volatility_Calc.R *Calcula promedios de profits
+                            y su volatilidad en todos los
+                            escenarios
+							
+5-Economic_Model_SS.R *Calcula los CE y RP para cada escenario
+                       Chequea restricciones ambientales 
+					   
+6-Results_Analysis.R *Graficos ppales y calculos a poner
+                      en los resultados del pdf
+					  
+7-Set_time.R *Extension del script 1, sirve
+              para fijar el tiempo de corrida en SWAT
+			  en base a print.prt
+			  
+8-irr_management.R *idem anterior, sirve para
+                    fijar operaciones de riego
+                    en las rotaciones en base
+                    al archivo management.sch					
+							
+
 ################DOCS#######################
 
 ###########################################

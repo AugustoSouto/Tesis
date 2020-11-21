@@ -10,7 +10,7 @@ setwd(paste0(model_scripts, "Data_Simulaciones_SWAT"))
 scenarios <-
   list.files(pattern="RData"); scenarios
 
-t1<-Sys.time()
+t1 <- Sys.time()
 
 #Definir el costo de irrigacion con el que quiero procesar los datos
 #Irr_cost----
@@ -36,11 +36,26 @@ for(s in scenarios){
   #1-Profit=Revenue-Cost
   
   #Prices:
+  #source:camara mercantil de productos del pais
   p_soybean <- 300
   p_wheat <- 195
   p_barley <- 130
   p_corn <- 205 
   p_oats <- 195
+  
+  #Cost=Variable Cost+Fixed Cost
+  #Variable Cost=Water Price.Irrigated Water
+  #cost source: okara
+  
+  #corn 1ra
+  #costs are measured in cost/ha (usd/ha)
+  
+  cost_corn <- 694
+  cost_soyb <- 488
+  cost_soy2 <- 395
+  cost_oats <- 393
+  cost_wheat <- 476
+  cost_barley <- 539
   
   #
   #yield is measured in kg/ha
@@ -61,21 +76,7 @@ for(s in scenarios){
     mutate(revenue=yield*area*price_ton/1000,
            revenue_ha=yield*price_ton/1000) ; head(output)
   
-  #Cost=Variable Cost+Fixed Cost
-  #Variable Cost=Water Price.Irrigated Water
   
-  
-  #cost source: okara
-  
-  #corn 1ra
-  #costs are measured in cost/ha (usd/ha)
-  
-  cost_corn <- 694
-  cost_soyb <- 488
-  cost_soy2 <- 395
-  cost_oats <- 393
-  cost_wheat <- 476
-  cost_barley <- 539
   
   output <-
     output %>%

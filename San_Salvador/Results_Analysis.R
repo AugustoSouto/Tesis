@@ -7,6 +7,7 @@ library(tidyverse)
 #CARGAR DATOS----
 model_scripts<- "C:/Users/Usuario/Desktop/Git/Tesis/San_Salvador/"
 graphs_dir<- "C:/Users/Usuario/Desktop/Git/Tesis/San_Salvador/Graficos_Salidas"
+docs_res_dir<- "C:/Users/Usuario/Desktop/Git/Tesis/San_Salvador/Docs_Resultados"
 
 setwd(paste0(model_scripts, "Data_Simulaciones_Eco"))
 list.files(pattern = "RDS")
@@ -308,68 +309,169 @@ data_ce %>% mutate(ARA=case_when(str_detect(Escenario, "ne_0.049") ~ "0.049",
   select(-Escenario) %>% rename(Escenario=Scenario)
                      
                         
-ggplot(data_ce, aes(x=Escenario, y=CE))+
+ggplot(data_ce %>% filter(ARA == 0.007) , aes(x=reorder(Escenario, -CE), y=CE))+
   geom_boxplot()+
-  facet_wrap(~ARA, ncol=2, scales = "free_y")+
+#  facet_wrap(~ARA, ncol=2, scales = "free_y")+
   theme(axis.text.x =element_text(angle=90,
                                   hjust=1),
-        text = element_text(size=7.5),
+        text = element_text(size=10),
         legend.position="none") + labs(x="Escenario", y="CE")
+
+ggsave("CE_ARA_0.07_Boxplot.jpeg",
+       path = graphs_dir
+       ,
+       width =6.84,
+       height =8.5, limitsize = FALSE
+)
 
 ggplot(data_ce, aes(x=reorder(Escenario,-CE), y=CE))+
   geom_boxplot()+
   facet_wrap(~ARA, ncol=2, scales = "free_y")+
   theme(axis.text.x =element_text(angle=90,
                                   hjust=1),
-        text = element_text(size=10),
+        text = element_text(size=12),
         legend.position="none") + labs(x="Escenario", y="CE")+
   scale_y_continuous(limits = quantile(data_ce$CE, c(0.01, 0.99)))
 
+ggsave("CE_ARA_Boxplot.jpeg",
+       path = graphs_dir
+       ,
+       width =6.84,
+       height =8.5, limitsize = FALSE
+)
+
+profit_
 
 
+#TABLAS CE----
+
+setwd(docs_res_dir)
+resultados %>% tibble::rownames_to_column("ARA") %>% write_csv2("CE_Escenarios.csv")
+
+#Resultados Ambientales-------
+
+setwd(paste0(model_scripts, "Data_Simulaciones_Eco"))
+
+env_files <-
+  list.files(pattern = "Env_Output") %>% str_subset(pattern="RDS")
+#load("Econ_Output_SWAT_Sim_Without_Irrigation.RData")
+
+for (env in env_files) {
+  
+  envi <- str_remove(env, pattern = "Env_Output_")
+  envi <- str_remove(envi, pattern=".RDS")
+  envi <- str_remove(envi, pattern="SWAT_Sim_")
+  assign(paste0("env_",envi) ,
+           readRDS(env) %>% mutate(scenario=envi)
+        )
+  
+}
 
 
+env_f  <-
+  list(                     
+    env_03_Rot1, env_03_Rot1y6, env_03_Rot6,
+    env_04_Rot1, env_04_Rot1y6, env_04_Rot6,
+    env_05_Rot1, env_05_Rot1y6, env_05_Rot6,
+    env_Without_Irrigation
+  )
 
 
+data_env <- Reduce(function(x,y){rbind(x=x, y=y)},env_f) 
 
 
-ggplot(resultados_mean2 %>% filter(ARA!="ARA_0") %>%
-         mutate(ARA=str_remove(ARA, "ARA_")), aes(fct_reorder(Escenario,-CE), CE, col=CE))+
-  geom_point()+
-  facet_wrap(~ARA, ncol=2, scales = "free_y")+
-  scale_y_continuous(labels = comma)+
+ggplot(data_env %>% filter(channel==2),
+       aes(x=reorder(scenario,-N_Concentration), y=N_Concentration))+
+  geom_boxplot()+
+  theme(axis.text.x =element_text(angle=90,
+                                  hjust=1),
+        text = element_text(size=10),
+        legend.position="none") +
+     labs(x="Escenario", y="N_Concentration")
+
+ggsave("Nit_Boxplot.jpeg",
+       path = graphs_dir
+       #width =
+       #height =
+)
+
+ggplot(data_env %>% filter(channel==2) %>% mutate(mon=as.numeric(mon)),
+       aes(x=reorder(scenario, -N_Concentration), y=N_Concentration))+
+  geom_boxplot()+
+  facet_wrap(~mon, scales = "free_y")+
   theme(axis.text.x =element_text(angle=90,
                                   hjust=1),
         text = element_text(size=7.5),
-        legend.position="none")+
-  labs(x="Escenario", y="CE")
+        legend.position="none") +
+  labs(x="Escenario", y="N_Concentration")
+
+ggsave("Nit_Boxplot_scenario.jpeg",
+       path = graphs_dir
+       #width =
+       #height =
+)
+
+ggplot(data_env %>% filter(channel==2) %>% mutate(mon=as.numeric(mon)),
+       aes(x=reorder(scenario, -P_Concentration), y=P_Concentration))+
+  geom_boxplot()+
+  theme(axis.text.x =element_text(angle=90,
+                                  hjust=1),
+        text = element_text(size=10),
+        legend.position="none") +
+  labs(x="Escenario", y="P_Concentration")
+
+ggsave("Ph_Boxplot.jpeg",
+       path = graphs_dir
+       #width =
+       #height =
+)
+
+ggplot(data_env %>% filter(channel==2) %>% mutate(mon=as.numeric(mon)),
+       aes(x=scenario, y=P_Concentration))+
+  geom_boxplot()+
+  theme(axis.text.x =element_text(angle=90,
+                                  hjust=1),
+        text = element_text(size=10),
+        legend.position="none") +
+  labs(x="Escenario", y="P_Concentration")+
+  facet_wrap(~mon, scales = "free_y")
+
+ggsave("Ph_Scenarios_Boxplot.jpeg",
+       path = graphs_dir
+       #width =
+       #height =
+)
+
+ggplot(data_env %>% filter(channel==2) %>% mutate(mon=as.numeric(mon)),
+       aes(x=scenario, y=flo_out))+
+  geom_boxplot()+
+  theme(axis.text.x =element_text(angle=90,
+                                  hjust=1),
+        text = element_text(size=10),
+        legend.position="none") +
+  labs(x="Escenario", y="Caudal")
+
+ggsave("Caudal_Boxplot.jpeg",
+       path = graphs_dir
+       #width =
+       #height =
+)
 
 
+ggplot(data_env %>% filter(channel==2) %>% mutate(mon=as.numeric(mon)),
+       aes(x=scenario, y=flo_out))+
+  geom_boxplot()+
+  theme(axis.text.x =element_text(angle=90,
+                                  hjust=1),
+        text = element_text(size=10),
+        legend.position="none") +
+  labs(x="Escenario", y="Caudal")+
+  facet_wrap(~mon, scales = "free_y")
 
-scale_fill_gradient(low = "yellow", high = "red", labels=comma)
+ggsave("Caudal_Escenario_Boxplot.jpeg",
+       path = graphs_dir
+       #width =
+       #height =
+)
 
-coso2$Escenario <- as.factor(coso2$Escenario)
-
-
-
-ceq_rp %>% select(contains("ce_ne")) %>%
-  apply(2, sum) %>% sort(decreasing = TRUE)
-
-
-
-ceq_rp %>% select("HRU", "Rotacion_riego",contains("rp_ne")) %>% 
-  apply(2, sum)
-
-
-#parameters <-
-#  parameters %>% mutate(HRU=as.numeric(HRU)) %>% 
-#  arrange(HRU)
-
-
-
-profit_data %>% select(profit_ha, Rotacion_riego ) %>%
-  filter(hru==n_hru)  %>% 
-  as.data.frame() %>%  select(profit_ha)
-#CE_2 is the CE of each scenario respect to base
-#but with the base scenario volatility
 
