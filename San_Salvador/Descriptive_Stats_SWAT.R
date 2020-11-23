@@ -32,14 +32,35 @@ for(scenario in scenarios){
          #width =
          #height =
          )  
+
   
-  ggplot(hru_info, aes(x=area))+
+hru_info2<-   
+  hru_info %>% filter(lu_mgt=="agrc_lum" |
+                        lu_mgt=="agrc2_lum" |
+                        lu_mgt=="agrc3_lum" |
+                        lu_mgt=="agrc4_lum" |
+                        lu_mgt=="gras_lum") %>%
+    mutate(
+      rotacion=case_when(lu_mgt=="agrc3_lum"~ "Rotacion_1",
+                         lu_mgt=="agrc4_lum"~ "Rotacion_6",
+                         lu_mgt!="agrc4_lum" &
+                           lu_mgt!="agrc3_lum"~ "Otras Rotaciones"))  
+
+hru_info2 %>% select(rotacion) %>% table()
+hru_info2 %>% group_by(rotacion) %>% summarise(
+  mean=mean(area),
+  median=median(area)
+)
+    
+  ggplot(hru_info2, aes(x=area) )+
     geom_histogram()+
-    facet_wrap(~lu_mgt)+
+    facet_wrap(~rotacion)+
     xlab("Area en Hectareas")+
-    ylab("HRUs")
+    ylab("HRUs")+
+    scale_x_continuous(limits = quantile(hru_info2$area, c(0, 0.95)))
   
-  ggsave(paste0("area_plot_rot", str_remove( scenario, ".RData"), ".jpeg"),
+
+  ggsave(paste0("area_plot_rot.jpeg"),
          path = graphs_dir
          #width =
          #height =
@@ -168,6 +189,24 @@ for(scenario in scenarios){
   
   ggplot(environmental_output %>%
            filter(channel==2) %>% 
+           select( flo_out, date_env), aes(x=date_env, y=flo_out)
+  ) +
+    geom_line(size=1) +
+    xlab("Fecha") +
+    ylab("Mg/L") +
+    labs(color=NULL, x="Fecha", y="M3/Seg") +
+    ggtitle("Caudal") +
+    scale_x_date(#date_labels = "%b%y", 
+      date_breaks = "6 month"
+      #,
+      #date_labels = "%"
+    )+
+    theme(axis.text.x =element_text(angle=90,
+                                    hjust=1),
+          text = element_text(size=7.5))
+  
+  ggplot(environmental_output %>%
+           filter(channel==2) %>% 
            select( flo_out, date_env) , aes(x=flo_out))+
     geom_histogram()
   
@@ -193,15 +232,14 @@ for(scenario in scenarios){
          #height =
   )  
   
-  
 
-  ggplot(  profit_data %>% group_by(hru) %>%
+  ggplot( profit_data  %>% group_by(hru) %>%
              summarise(profit_ha_tot=sum(profit_ha)) %>%
-             plyr::join(hrus_rotations, by="hru"),
+             plyr::join(hru_info2, by="hru"),
            
            aes(x=profit_ha_tot))+
     geom_histogram()+
-    facet_wrap(~lu_mgt)
+    facet_wrap(~rotacion)
   
   ggsave(paste0("Profit_ha_mean", str_remove( scenario, ".RData"), ".jpeg"),
          path = graphs_dir
@@ -213,9 +251,12 @@ for(scenario in scenarios){
     
   ggplot(profit_data %>% group_by(hru) %>%
            summarise(profit_ha_mean=mean(profit_ha)) %>%
-           plyr::join(hrus_rotations, by="hru"),aes(x=profit_ha_mean))+
+           plyr::join(hru_info2, by="hru") %>% filter(!is.na(rotacion))
+           ,aes(x=profit_ha_mean))+
     geom_histogram() +
-    facet_wrap(~lu_mgt)
+    facet_wrap(~rotacion)+
+    ylab("HRUs")+
+    xlab("Beneficio_Promedio_ha")
   
   
   ggsave(paste0("Prof_ha", str_remove( scenario, ".RData"), ".jpeg"),
@@ -256,7 +297,7 @@ for(scenario in scenarios){
          #height =
   )  
   
-  
+  #Riego----
   ggplot(profit_data , aes(x=irr_sum))+
     geom_histogram() +
     facet_wrap(~yr)
@@ -267,7 +308,7 @@ for(scenario in scenarios){
          #height =
   )  
   
-
+if(scenario!="SWAT_Sim_Without_Irrigation.RData"){
   ggplot(profit_data %>% filter(irr_cost_ha>0) , aes(x=irr_cost_ha))+
     geom_histogram() +
     facet_wrap(~yr)
@@ -287,7 +328,7 @@ for(scenario in scenarios){
          #width =
          #height =
   )  
-  
+}
     
   
     hru_info %>% group_by(lu_mgt) %>% 
