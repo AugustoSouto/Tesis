@@ -30,17 +30,27 @@ for(s in scenarios){
   
   #Profit Computation----
   
+  
+  
+  #Parameters(Prices and Costs)----
   #Time Unit:Yearly
   
   #Profit Equation
   #1-Profit=Revenue-Cost
   
   #Prices:
+  #Prices are an approximation made
+  #using price at port minus transport
   #source:camara mercantil de productos del pais
-  p_soybean <- 300
-  p_wheat <- 195
-  p_barley <- 130
-  p_corn <- 205 
+  #source: MTOP, cost per tonne per km is aprox 0.2 usd
+  #       if average distance (to nueva palmira) in the basin is 50 km 
+  #       then the transportation cost is approx 10 usd    
+  #       if avg distance is 250 from MVD the cost is 50 usd
+
+  p_soybean <- 310
+  p_wheat <- 185 
+  p_barley <- 140
+  p_corn <- 140 
   p_oats <- 195
   
   #Cost=Variable Cost+Fixed Cost
