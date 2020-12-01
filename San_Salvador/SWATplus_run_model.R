@@ -9,15 +9,15 @@ model_files<- "C:/Users/Usuario/Desktop/SWATsept/SSalvador_LU2018_v0/Scenarios/D
 model_scripts<- "C:/Users/Usuario/Desktop/Git/Tesis/San_Salvador/"
 
 #0 Put Scenarios-----
-sc1 <- c("", "", "irr_str30","irr_str30", "", "" )
-sc2 <- c("", "", "irr_str40","irr_str40", "", "" )
-sc3 <- c("", "", "irr_str50","irr_str50", "", "" )
-sc4 <- c("", "", "irr_str30","", "", "" )
-sc5 <- c("", "", "irr_str40","", "", "" )
-sc6 <- c("", "", "irr_str50","", "", "" )
-sc7 <- c("", "", "","irr_str_30", "", "" )
-sc8 <- c("", "", "","irr_str_40", "", "" )
-sc9 <- c("", "", "","irr_str_50", "", "" )
+sc1 <- c("", "", "irr_str30_unlim","irr_str30_unlim", "", "" )
+sc2 <- c("", "", "irr_str40_unlim","irr_str40_unlim", "", "" )
+sc3 <- c("", "", "irr_str50_unlim","irr_str50_unlim", "", "" )
+sc4 <- c("", "", "irr_str30_unlim","", "", "" )
+sc5 <- c("", "", "irr_str40_unlim","", "", "" )
+sc6 <- c("", "", "irr_str50_unlim","", "", "" )
+sc7 <- c("", "", "","irr_str_30_unlim", "", "" )
+sc8 <- c("", "", "","irr_str_40_unlim", "", "" )
+sc9 <- c("", "", "","irr_str_50_unlim", "", "" )
 scbase <- c("", "", "","", "", "" )
 
 scenarios <-
@@ -83,6 +83,17 @@ source("irr_management.R")
 
 # "" quiere decir que no se riega
 
+set_irrigation<-
+function(scenario){
+  irr_management_all(rot1=scenario[1],
+                     rot2=scenario[2],
+                     rot3=scenario[3],
+                     rot4=scenario[4],
+                     rot5=scenario[5],
+                     rot6=scenario[6])
+  }
+
+set_irrigation(scenario = sc2)
 
 irr_management_all(rot1=sc6[1],
                    rot2=sc6[2],
