@@ -1,0 +1,248 @@
+---
+title: "Resultados por Subcuenca"
+author: "Augusto Souto-Perez"
+date: "9/12/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      warning = FALSE,
+                      message = FALSE)
+```
+
+
+
+```{r,echo=FALSE}
+rm(list=ls())
+library(tidyverse)
+setwd("C:/Users/Usuario/Desktop/Git/Tesis/San_Salvador")
+
+hru_info <-
+  readRDS("hru_info.RDS")
+
+sub_hru <-
+  readRDS("sub_hru.RDS")
+
+hru_info <-
+plyr::join(hru_info, sub_hru, by="hru")
+
+sub_hru <-
+ readRDS("sub_hru.RDS")
+
+sub_chan<-
+ readRDS("sub_chan.RDS") %>% rename(channel=Channel) %>%
+  mutate(Subbasin=as.numeric(Subbasin)) %>% as_tibble()
+
+
+```
+
+```{r, echo=FALSE}
+setwd("C:/Users/Usuario/Desktop/Git/Tesis/San_Salvador/Data_Simulaciones_Eco")
+load("Econ_Output_sc1.RData")
+
+env_out_sub <-
+environmental_output %>% plyr::join(sub_chan, by="channel") %>%
+mutate(channel=as.numeric(channel))
+```
+
+
+# P, N y Caudal 
+
+Observaciones:
+
++ La cantidad de canales del shape del proyecto no coincide con la cantidad de channels del archivo de salida del SWAT. En este ultimo tengo 95 y en el primero más de 100 canales.
+
++ Por lo tanto, hay canales que quedan sin identificar su subcuenca. 
+
++ Dentro de los canales que salen en el SWAT, algunos no se encuentran tampoco en los canales del proyecto.
+
+En la imagen, donde los channels estan en azul y la subcuenca en negro, se nota que no están incluidos todos los channels. 
+
+![Canales y Subcuencas del archivo hru2.shp](C:/Users/Usuario/Desktop/Git/Tesis/San_Salvador/Channels.jpg)
+
+## Salidas
+
+Notar que el nivel permitido por dinama es de hasta 0.25 mg/L en P y 10 mg/L en N. A continuación los resultados por canal y subcuenca.
+
+```{r}
+dt1<-
+env_out_sub %>% group_by(channel, Subbasin) %>% summarise(P_mean=mean(P_Concentration),                                  N_mean=mean(N_Concentration),                                  flo_out_mean=mean(flo_out)) %>%
+          arrange(desc(P_mean)); dt1
+
+env_out_sub %>% group_by(channel, Subbasin) %>% summarise(P_mean=mean(P_Concentration),                                  N_mean=mean(N_Concentration),                                  flo_out_mean=mean(flo_out)) %>%
+          arrange(desc(N_mean))
+
+env_out_sub %>% group_by(channel, Subbasin) %>% summarise(P_mean=mean(P_Concentration),                                  N_mean=mean(N_Concentration),                                  flo_out_mean=mean(flo_out)) %>%
+          arrange(desc(flo_out_mean))
+
+env_out_sub %>% group_by(channel, Subbasin) %>% summarise(P_mean=mean(P_Concentration),                                  N_mean=mean(N_Concentration),                                  flo_out_mean=mean(flo_out)) %>%
+          arrange(flo_out_mean)
+
+```
+
+```{r}
+plotly::ggplotly(
+ggplot(data=dt1 %>% filter(channel!=95), aes(x=channel, y=N_mean, fill=Subbasin)) +
+  geom_bar(stat="identity")+
+  coord_flip()
+)
+
+plotly::ggplotly(
+ggplot(data=dt1 %>% filter(channel!=95), aes(x=channel, y=P_mean, fill=Subbasin)) +
+  geom_bar(stat="identity")+
+  coord_flip()
+)
+
+plotly::ggplotly(
+ggplot(data=dt1 %>% filter(P_mean<10), aes(x=channel, y=P_mean, fill=Subbasin)) +
+  geom_bar(stat="identity")+
+  coord_flip()
+)
+
+plotly::ggplotly(
+ggplot(data=dt1, aes(x=channel, y=flo_out_mean, fill=Subbasin)) +
+  geom_bar(stat="identity")+
+  coord_flip()
+)
+
+
+```
+
+Los resultados solo por subcuenca son los siguientes:
+
+```{r}
+#sub promedio N, P, Flo por subbasin ----
+dt2<- env_out_sub %>% group_by(Subbasin) %>% summarise(P_mean=mean(P_Concentration),                                              N_mean=mean(N_Concentration),
+                      flo_out_mean=mean(flo_out)) %>%
+  arrange(desc(P_mean)) %>% 
+  filter(!is.na(Subbasin)) %>%
+  mutate(indice_N=N_mean/max(N_mean),
+         indice_P=P_mean/max(P_mean),
+         indice_flo=flo_out_mean/max(flo_out_mean)); dt2
+
+dt3<- env_out_sub %>% group_by(yr) %>% summarise(P_mean=mean(P_Concentration),                                              N_mean=mean(N_Concentration),
+                      flo_out_mean=mean(flo_out)) %>%
+  mutate(indice_N=N_mean/max(N_mean),
+         indice_P=P_mean/max(P_mean),
+         indice_flo=flo_out_mean/max(flo_out_mean)) %>%
+  mutate(yr=as.numeric(yr)) %>% arrange(yr); dt3
+```
+
+```{r}
+
+plotly::ggplotly(
+ggplot(data=dt2, aes(x=Subbasin, y=N_mean, fill=Subbasin)) +
+  geom_bar(stat="identity")+
+  coord_flip()
+)
+
+plotly::ggplotly(
+ggplot(data=dt2, aes(x=Subbasin, y=P_mean, fill=Subbasin)) +
+  geom_bar(stat="identity")+
+  coord_flip()
+)
+
+plotly::ggplotly(
+ggplot(data=dt2 %>% filter(P_mean<20), aes(x=Subbasin, y=P_mean, fill=Subbasin)) +
+  geom_bar(stat="identity")+
+  coord_flip()
+)
+
+plotly::ggplotly(
+ggplot(data=dt2, aes(x=Subbasin, y=flo_out_mean, fill=Subbasin)) +
+  geom_bar(stat="identity")+
+  coord_flip()
+)
+
+
+
+plotly::ggplotly(
+ggplot(data=dt1 %>% filter(!is.na(Subbasin)), aes(x=Subbasin, y=N_mean)) +
+  geom_boxplot()
+)
+
+plotly::ggplotly(
+ggplot(data=dt1 %>% filter(!is.na(Subbasin)) %>% filter(P_mean<20), aes(x=Subbasin, y=P_mean)) +
+  geom_boxplot()
+)
+
+
+plotly::ggplotly(
+ggplot(data=env_out_sub  %>% filter(P_Concentration<10), aes(x=yr, y=P_Concentration)) +
+geom_boxplot()
+
+)
+
+plotly::ggplotly(
+ggplot(data=env_out_sub  %>% filter(N_Concentration<100), aes(x=yr, y=N_Concentration)) +
+geom_boxplot()
+
+)
+
+plotly::ggplotly(
+ggplot(data=env_out_sub , aes(x=yr, y=flo_out)) +
+geom_boxplot()
+
+)
+
+
+
+plotly::ggplotly(
+ggplot(data=dt1 %>% filter(!is.na(Subbasin)) , aes(x=Subbasin, y=flo_out_mean)) +
+geom_boxplot()
+
+)
+```
+
+
+# Riego
+
+```{r}
+irr_yr<-
+  irr_yr %>% plyr::join(hru_info, by="hru") %>% plyr::join(sub_hru, by="hru")
+```
+
+
+```{r}
+irr1<-
+irr_yr %>% group_by(Subbasin) %>%
+  summarise(irr=sum(irr_sum)) %>% arrange(desc(irr));irr1
+
+plotly::ggplotly(
+ggplot(data=irr_yr %>% filter(!is.na(Subbasin)) , aes(x=Subbasin, y=irr_sum)) +
+  geom_boxplot()
+)
+
+
+irr2<-
+irr_yr %>% group_by(lu_mgt) %>%
+  summarise(irr=sum(irr_sum)); irr2
+
+plotly::ggplotly(
+ggplot(data=irr_yr  , aes(x=lu_mgt, y=irr_sum)) +
+ geom_boxplot()
+)
+
+irr3<-
+irr_yr %>% group_by(yr) %>%
+  summarise(irr=sum(irr_sum)); irr3
+
+plotly::ggplotly(
+ggplot(data=irr_yr  , aes(x=yr, y=irr_sum)) +
+   geom_boxplot()
+)
+
+irr4<-
+irr_yr %>% group_by(Subbasin, lu_mgt) %>%
+  summarise(irr=sum(irr_sum)); irr4
+
+plotly::ggplotly(
+ggplot(data=irr_yr, aes(x=Subbasin, y=irr_sum, fill=lu_mgt)) +
+  geom_bar(stat="identity")
+)
+
+
+
+```
+

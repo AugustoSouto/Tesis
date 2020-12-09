@@ -1,0 +1,10 @@
+name: Publish Document
+title:
+username:
+account: rpubs
+server: rpubs.com
+hostUrl: rpubs.com
+appId: https://api.rpubs.com/api/v1/document/702052/cfa7b28a66a943749184a99584ca3020
+bundleId: https://api.rpubs.com/api/v1/document/702052/cfa7b28a66a943749184a99584ca3020
+url: http://rpubs.com/augustosoutoperez/702052
+when: 1607512531.64507
