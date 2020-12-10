@@ -103,8 +103,8 @@ irr_management_all <- function(rot1="",
                "irr_str40_unlim",
                "irr_str40_unlim",
                "irr_str50_unlim",
-               "irr_sw10_unlim",
-               "irr_sw15_unlim",
+               "irr_str95_unlim",
+               "irr_str80_unlim",
                "irr_sw20_unlim",
                "irr_sw25_unlim",
                "irr_sw30_unlim",
@@ -318,7 +318,7 @@ irr_management_all <- function(rot1="",
                              
                              collapse = " ")
     
-    doc[index][3] <-  paste0(c(rep("", 65-rut_len3-1),
+  doc[index][3] <-  paste0(c(rep("", 65-rut_len3-1),
                                rutinas[match(rot3, rutinas)]) ,
                              
                              collapse = " ")
