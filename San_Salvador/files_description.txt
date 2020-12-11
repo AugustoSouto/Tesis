@@ -31,7 +31,7 @@
                     al archivo management.sch					
 							
 
-################DOCS#######################
+################DOCS# ######################
 
 ###########################################
 TxtInOut/hru_pw_day.txt *RESULTADOS POR HRU
