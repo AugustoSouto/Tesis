@@ -9,20 +9,25 @@ model_files<- "C:/Users/Usuario/Desktop/SWATsept/SSalvador_LU2018_v0/Scenarios/D
 model_scripts<- "C:/Users/Usuario/Desktop/Git/Tesis/San_Salvador/"
 
 #0 Put Scenarios-----
-sc1 <- c("", "", "irr_str30_unlim","irr_str30_unlim", "", "" )
-sc2 <- c("", "", "irr_str40_unlim","irr_str40_unlim", "", "" )
-sc3 <- c("", "", "irr_str50_unlim","irr_str50_unlim", "", "" )
-sc4 <- c("", "", "irr_str30_unlim","", "", "" )
-sc5 <- c("", "", "irr_str40_unlim","", "", "" )
-sc6 <- c("", "", "irr_str50_unlim","", "", "" )
-sc7 <- c("", "", "","irr_str_30_unlim", "", "" )
-sc8 <- c("", "", "","irr_str_40_unlim", "", "" )
-sc9 <- c("", "", "","irr_str_50_unlim", "", "" )
+sc1 <- c("", "", "irr_str80_unlim","irr_str80_unlim", "", "" )
+sc2 <- c("", "", "irr_str95_unlim","irr_str95_unlim", "", "" )
+sc3 <- c("", "", "irr_str40_unlim","irr_str40_unlim", "", "" )
+sc4 <- c("", "", "irr_str80_unlim","", "", "" )
+sc5 <- c("", "", "irr_str95_unlim","", "", "" )
+sc6 <- c("", "", "irr_str40_unlim","", "", "" )
+sc7 <- c("", "", "","irr_str80_unlim", "", "" )
+sc8 <- c("", "", "","irr_str95_unlim", "", "" )
+sc9 <- c("", "", "","irr_str40_unlim", "", "" )
 scbase <- c("", "", "","", "", "" )
 
 scenarios <-
 rbind(sc1, sc2, sc3, sc4, sc5, sc6, sc7, sc8, sc9, scbase)
-  
+
+
+for (sc in 1:dim(scenarios)[1]) {
+ 
+
+
 #1 Settings-----
 #1.1-Set time-----
 #check time
@@ -69,6 +74,11 @@ time(year_begin = yr_begin, year_end = yr_end, path = model_files)
 #tambien puedo editar el resto de las operaciones de cada rotacion
 #shell.exec(paste0(model_files, "management.sch"))
 
+#Fijarme que el archivo management.sch que use al inicio
+#este bien, es decir, que tenga un renglon libre dejajo del
+#nombre de la rotacion para poner la operacion de riego o dejarlo
+#libre en el caso de que no se regue, sino va a haber un error al correr
+
 setwd(model_scripts)
 
 source("irr_management.R")
@@ -93,22 +103,9 @@ function(scenario){
                      rot6=scenario[6])
   }
 
-set_irrigation(scenario = sc2)
-
-irr_management_all(rot1=sc6[1],
-                   rot2=sc6[2],
-                   rot3=sc6[3],
-                   rot4=sc6[4],
-                   rot5=sc6[5],
-                   rot6=sc6[6])
+set_irrigation(scenario = scenarios[sc,])
 
 
-irr_management_all(rot1=scenarios[scenario,1],
-                   rot2=scenarios[scenario,2],
-                   rot3=scenarios[scenario,3],
-                   rot4=scenarios[scenario,4],
-                   rot5=scenarios[scenario,5],
-                   rot6=scenarios[scenario,6])
 
 #Primera prueba, despues puedo loopear
 
@@ -124,7 +121,8 @@ irr_management_all(rot1=scenarios[scenario,1],
 #4-Correr el modelo
 t1 <-Sys.time()
 shell.exec(paste0(model_files, "Rev59.3_64rel.exe"))
-#Sys.sleep(60*40) poner un tiempo que asegure la ejecucion
+print("coso")
+Sys.sleep(60*27) # poner un tiempo que asegure la ejecucion
 t2 <- Sys.time()
 tiempo_corrida<- t2-t1; tiempo_corrida
 
@@ -140,7 +138,7 @@ t3<- Sys.time()
 
 mgt_out <- 
   read_table2(paste0(model_files, "mgt_out.txt"),
-              skip=1) %>% select("hru", "year", "mon", "day",
+              skip=1) %>% dplyr::select("hru", "year", "mon", "day",
                                  "operation", "crop/fert/pest")
 
 mgt_out <- mgt_out[-1,] %>% rename(crop_fert_pest=`crop/fert/pest`) 
@@ -183,7 +181,7 @@ if(mgt_out$hru[i]!=mgt_out$hru[i+1] & i!=dim(mgt_out)[1]){
 
   }
 }
-
+  
 for(j in 2:dim(mgt_out)[1]){
   print(j)
   #caso begin cuando es la primer operacion de la hru
@@ -209,7 +207,7 @@ mgt_out <-
 mgt_out %>% mutate(hru=as.numeric(hru),
                    month_end=zoo::as.yearmon(date_end)) %>% 
 arrange(hru) %>% 
-select(hru, date_begin, date_end, month_end, crop) 
+dplyr::select(hru, date_begin, date_end, month_end, crop) 
   
 #finalmente, ahora en mgt_out tenemos para cada
 #hru el uso definido por intervalo de fechas
@@ -236,11 +234,11 @@ select(hru, date_begin, date_end, month_end, crop)
 
 
 n_hru <- read_table2(paste0(model_files, "hru.con"), skip=1) %>%
-  select(id) %>% unique %>% nrow
+         dplyr::select(id) %>% unique %>% nrow
 
 
 areas <- read_table2(paste0(model_files, "hru.con"), skip=1) %>%
-         select(id, area) %>% rename(hru=id) %>%
+         dplyr::select(id, area) %>% rename(hru=id) %>%
          mutate(hru=as.numeric(hru)) %>%
          arrange(hru)
 
@@ -248,7 +246,7 @@ areas <- read_table2(paste0(model_files, "hru.con"), skip=1) %>%
 #can modify hru rotations by editing the hru-data file
 hrus_rotations <- 
   read_table2(paste0(model_files, "hru-data.hru"),
-              skip=1) %>% select("id", "lu_mgt") %>%
+              skip=1) %>% dplyr::select(id, lu_mgt) %>%
   rename(hru=id)
 
 ##5.4 Get Yield----
@@ -262,8 +260,8 @@ hrus_rotations <-
 hru_yield <-
   read_table2(paste0(model_files, "hru_pw_mon.txt"),
               #n_max = 100,
-              skip=1) %>% select("unit", "yr", "mon", "day",
-                                 "yield") %>%
+              skip=1) %>% dplyr::select(unit, yr, mon, day,
+                                 yield) %>%
   slice(-1) %>%
   mutate(date_yield=
        lubridate::ymd(paste(yr, mon, day))
@@ -272,7 +270,7 @@ relocate(date_yield, .before=yr) %>%
 rename(hru=unit) %>%
 arrange(hru) %>%
 relocate(hru, yield, .before=yr) %>%
-select(hru, date_yield, yield) %>%
+dplyr::select(hru, date_yield, yield) %>%
 mutate(hru=as.numeric(hru),
        yield=as.numeric(yield),
        month_yield=zoo::as.yearmon(date_yield)) %>%
@@ -299,7 +297,7 @@ plyr::join(mgt_out, hru_yield, by="hru" ) %>%
   
 irr <- read_table2(paste0(model_files, "hru_wb_mon.txt"),
                    skip=1) %>%
-  select(unit,mon, day, yr, irr) %>%
+  dplyr::select(unit,mon, day, yr, irr) %>%
   mutate(date_irr=lubridate::ymd(paste(yr, mon, day)),
          irr=as.numeric(irr)) %>%
   filter(irr>0) %>%
@@ -319,13 +317,14 @@ irr_yr<-
 environmental_output <-
 read_table2(paste0(model_files, "channel_sd_mon.txt"),
             #n_max = 100,
-            skip=1) %>% select("unit",
-                               "mon", "day", "yr",
-                               "no3_out", "solp_out",
-                               "flo_out") %>%
+            skip=1) %>% dplyr::select(unit, gis_id,
+                               mon, day, yr,
+                               no3_out, solp_out,
+                               flo_out, precip, evap) %>%
   mutate(date_env=lubridate::ymd(paste(yr, mon, day))) %>%
   slice(-1)  %>% 
   rename(channel=unit,
+         channel_id=gis_id,
          Nitrogen=no3_out,
          Phosphorus=solp_out) %>%
   mutate(Phosphorus=as.numeric(Phosphorus),
@@ -334,6 +333,7 @@ read_table2(paste0(model_files, "channel_sd_mon.txt"),
   mutate(P_Concentration=(Phosphorus*1000000)/(flo_out*60*60*24*1000*30),
          N_Concentration=(Nitrogen*1000000)/(flo_out*60*60*24*1000*30)
          )
+
 
 t4 <- Sys.time()
 
@@ -345,9 +345,9 @@ beepr::beep(sound=5)
 #6 Save Output ----
 
 setwd(paste0(model_scripts, "Data_Simulaciones_SWAT"))
-save.image(paste0(rownames(scenarios)[scenario], ".RData"))
+save.image(paste0(rownames(scenarios)[sc], ".RData"))
 
-
+}  
 
 #Old Saving
 #save.image("SWAT_Sim_03_Rot1.RData")

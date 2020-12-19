@@ -15,7 +15,9 @@ knitr::opts_chunk$set(echo = TRUE,
 
 ```{r,echo=FALSE}
 rm(list=ls())
+
 library(tidyverse)
+
 setwd("C:/Users/Usuario/Desktop/Git/Tesis/San_Salvador")
 
 hru_info <-
@@ -34,215 +36,272 @@ sub_chan<-
  readRDS("sub_chan.RDS") %>% rename(channel=Channel) %>%
   mutate(Subbasin=as.numeric(Subbasin)) %>% as_tibble()
 
+environmental_results <- 
+  readRDS("Resultados_Ambientales/Env_Results_Scenarios.RDS")
+
+subbasins <-
+  readRDS("subbasins.RDS")
+
+subbasins_chan <-
+subbasins %>% group_by(subbasin) %>% top_n(1, areac) 
+
+subbasins_chan <-
+subbasins_chan %>%  dplyr::select(id)
+
+env_results <-
+environmental_results %>% filter(channel_id%in%subbasins_chan$id) %>%
+  rename(id=channel_id) %>% plyr::join(subbasins_chan, by="id") %>%
+  mutate(evap=as.numeric(evap),
+         precip=as.numeric(precip)
+         )
+
+env_sum_stats <-
+env_results %>% group_by(scenario, subbasin) %>% 
+  summarise(P=mean(P_Concentration),
+            N=mean(N_Concentration),
+            flo_out=mean(flo_out),
+            evap=mean(evap),
+            precip=mean(precip))
+
 
 ```
 
-```{r, echo=FALSE}
-setwd("C:/Users/Usuario/Desktop/Git/Tesis/San_Salvador/Data_Simulaciones_Eco")
-load("Econ_Output_sc1.RData")
 
-env_out_sub <-
-environmental_output %>% plyr::join(sub_chan, by="channel") %>%
-mutate(channel=as.numeric(channel))
+# Datos
+
+Aspecto:
+
+```{r}
+env_results %>% head
 ```
+
 
 
 # P, N y Caudal 
 
-Observaciones:
-
-+ La cantidad de canales del shape del proyecto no coincide con la cantidad de channels del archivo de salida del SWAT. En este ultimo tengo 95 y en el primero más de 100 canales.
-
-+ Por lo tanto, hay canales que quedan sin identificar su subcuenca. 
-
-+ Dentro de los canales que salen en el SWAT, algunos no se encuentran tampoco en los canales del proyecto.
 
 En la imagen, donde los channels estan en azul y la subcuenca en negro, se nota que no están incluidos todos los channels. 
 
 ![Canales y Subcuencas del archivo hru2.shp](C:/Users/Usuario/Desktop/Git/Tesis/San_Salvador/Channels.jpg)
 
+Escenarios:
+
+
+
+
+1.  Rot 1 y 6 con riego al 80%  
+2.  Rot 1 y 6 con riego al 95%
+3.  Rot 1 y 6 con riego al 40%
+4.  Rot 1 con riego al 80%
+5.  Rot 1 con riego al 95%
+6.  Rot 1 con riego al 40%
+7.  Rot 6 con riego al 80%
+8.  Rot 6 con riego al 95%
+9.  Rot 6 con riego al 40% 
+10. Base sin riego
+
+
+
+
+```{r}
+plotly::ggplotly(
+ggplot(env_results, aes(x=scenario, y=P_Concentration))+
+  geom_boxplot()+
+  facet_wrap(~subbasin,scales = "free_y")+
+  scale_y_continuous(limits = quantile(env_results$P_Concentration, c(0.10, 0.90)))+
+  theme(axis.text.x =element_text(angle=90,
+                                  hjust=1),
+        text = element_text(size=12))
+)
+```
+
+```{r}
+plotly::ggplotly(
+ggplot(env_results, aes(x=scenario, y=N_Concentration))+
+  geom_boxplot()+
+  facet_wrap(~subbasin,scales = "free_y")+
+  theme(axis.text.x =element_text(angle=90,
+                                  hjust=1),
+        text = element_text(size=12))+
+  scale_y_continuous(limits = quantile(env_results$N_Concentration, c(0.10, 0.90)))
+)
+```
+
+
+```{r}
+plotly::ggplotly(
+ggplot(env_results, aes(x=scenario, y=flo_out))+
+  geom_boxplot()+
+  facet_wrap(~subbasin, scales = "free_y")+
+  theme(axis.text.x =element_text(angle=90,
+                                  hjust=1),
+        text = element_text(size=12))+
+  scale_y_continuous(limits = quantile(env_results$flo_out, c(0.10, 0.90)))
+)
+```
+
 ## Salidas
 
 Notar que el nivel permitido por dinama es de hasta 0.25 mg/L en P y 10 mg/L en N. A continuación los resultados por canal y subcuenca.
 
-```{r}
-dt1<-
-env_out_sub %>% group_by(channel, Subbasin) %>% summarise(P_mean=mean(P_Concentration),                                  N_mean=mean(N_Concentration),                                  flo_out_mean=mean(flo_out)) %>%
-          arrange(desc(P_mean)); dt1
-
-env_out_sub %>% group_by(channel, Subbasin) %>% summarise(P_mean=mean(P_Concentration),                                  N_mean=mean(N_Concentration),                                  flo_out_mean=mean(flo_out)) %>%
-          arrange(desc(N_mean))
-
-env_out_sub %>% group_by(channel, Subbasin) %>% summarise(P_mean=mean(P_Concentration),                                  N_mean=mean(N_Concentration),                                  flo_out_mean=mean(flo_out)) %>%
-          arrange(desc(flo_out_mean))
-
-env_out_sub %>% group_by(channel, Subbasin) %>% summarise(P_mean=mean(P_Concentration),                                  N_mean=mean(N_Concentration),                                  flo_out_mean=mean(flo_out)) %>%
-          arrange(flo_out_mean)
-
-```
-
-```{r}
-plotly::ggplotly(
-ggplot(data=dt1 %>% filter(channel!=95), aes(x=channel, y=N_mean, fill=Subbasin)) +
-  geom_bar(stat="identity")+
-  coord_flip()
-)
-
-plotly::ggplotly(
-ggplot(data=dt1 %>% filter(channel!=95), aes(x=channel, y=P_mean, fill=Subbasin)) +
-  geom_bar(stat="identity")+
-  coord_flip()
-)
-
-plotly::ggplotly(
-ggplot(data=dt1 %>% filter(P_mean<10), aes(x=channel, y=P_mean, fill=Subbasin)) +
-  geom_bar(stat="identity")+
-  coord_flip()
-)
-
-plotly::ggplotly(
-ggplot(data=dt1, aes(x=channel, y=flo_out_mean, fill=Subbasin)) +
-  geom_bar(stat="identity")+
-  coord_flip()
-)
-
-
-```
-
 Los resultados solo por subcuenca son los siguientes:
 
-```{r}
-#sub promedio N, P, Flo por subbasin ----
-dt2<- env_out_sub %>% group_by(Subbasin) %>% summarise(P_mean=mean(P_Concentration),                                              N_mean=mean(N_Concentration),
-                      flo_out_mean=mean(flo_out)) %>%
-  arrange(desc(P_mean)) %>% 
-  filter(!is.na(Subbasin)) %>%
-  mutate(indice_N=N_mean/max(N_mean),
-         indice_P=P_mean/max(P_mean),
-         indice_flo=flo_out_mean/max(flo_out_mean)); dt2
-
-dt3<- env_out_sub %>% group_by(yr) %>% summarise(P_mean=mean(P_Concentration),                                              N_mean=mean(N_Concentration),
-                      flo_out_mean=mean(flo_out)) %>%
-  mutate(indice_N=N_mean/max(N_mean),
-         indice_P=P_mean/max(P_mean),
-         indice_flo=flo_out_mean/max(flo_out_mean)) %>%
-  mutate(yr=as.numeric(yr)) %>% arrange(yr); dt3
-```
-
-```{r}
-
-plotly::ggplotly(
-ggplot(data=dt2, aes(x=Subbasin, y=N_mean, fill=Subbasin)) +
-  geom_bar(stat="identity")+
-  coord_flip()
-)
-
-plotly::ggplotly(
-ggplot(data=dt2, aes(x=Subbasin, y=P_mean, fill=Subbasin)) +
-  geom_bar(stat="identity")+
-  coord_flip()
-)
-
-plotly::ggplotly(
-ggplot(data=dt2 %>% filter(P_mean<20), aes(x=Subbasin, y=P_mean, fill=Subbasin)) +
-  geom_bar(stat="identity")+
-  coord_flip()
-)
-
-plotly::ggplotly(
-ggplot(data=dt2, aes(x=Subbasin, y=flo_out_mean, fill=Subbasin)) +
-  geom_bar(stat="identity")+
-  coord_flip()
-)
-
-
-
-plotly::ggplotly(
-ggplot(data=dt1 %>% filter(!is.na(Subbasin)), aes(x=Subbasin, y=N_mean)) +
-  geom_boxplot()
-)
-
-plotly::ggplotly(
-ggplot(data=dt1 %>% filter(!is.na(Subbasin)) %>% filter(P_mean<20), aes(x=Subbasin, y=P_mean)) +
-  geom_boxplot()
-)
-
-
-plotly::ggplotly(
-ggplot(data=env_out_sub  %>% filter(P_Concentration<10), aes(x=yr, y=P_Concentration)) +
-geom_boxplot()
-
-)
-
-plotly::ggplotly(
-ggplot(data=env_out_sub  %>% filter(N_Concentration<100), aes(x=yr, y=N_Concentration)) +
-geom_boxplot()
-
-)
-
-plotly::ggplotly(
-ggplot(data=env_out_sub , aes(x=yr, y=flo_out)) +
-geom_boxplot()
-
-)
-
-
-
-plotly::ggplotly(
-ggplot(data=dt1 %>% filter(!is.na(Subbasin)) , aes(x=Subbasin, y=flo_out_mean)) +
-geom_boxplot()
-
-)
-```
 
 
 # Riego
 
+El primer grafico muestra todos con la misma escala para detectar cuales son los años con mas riego. El resto estan por escala de cada año.
+
 ```{r}
+irr_yr <- 
+  readRDS("C:/Users/Usuario/Desktop/Git/Tesis/San_Salvador/Data_Simulaciones_Eco/irr_yr.RDS")
+
 irr_yr<-
-  irr_yr %>% plyr::join(hru_info, by="hru") %>% plyr::join(sub_hru, by="hru")
+  irr_yr %>% plyr::join(hru_info, by="hru")
+
+irr_yr %>% head
 ```
 
 
 ```{r}
-irr1<-
-irr_yr %>% group_by(Subbasin) %>%
-  summarise(irr=sum(irr_sum)) %>% arrange(desc(irr));irr1
 
+ggplot(irr_yr %>% filter(!is.na(Subbasin)), aes(x=scen, y=irr_sum))+
+  geom_boxplot()+
+  facet_wrap(~Subbasin)+
+  theme(axis.text.x =element_text(angle=90,
+                                  hjust=1),
+        text = element_text(size=12))
+
+ggplot(irr_yr %>% filter(!is.na(Subbasin)), aes(x=scen, y=irr_sum))+
+  geom_boxplot()+
+  facet_wrap(~yr,scales = "free_y")+
+  theme(axis.text.x =element_text(angle=90,
+                                  hjust=1),
+        text = element_text(size=12))
+
+ggplot(irr_yr %>% filter(!is.na(Subbasin)), aes(x=scen, y=irr_sum))+
+  geom_boxplot()+
+  facet_wrap(~Subbasin,scales = "free_y" )+
+  theme(axis.text.x =element_text(angle=90,
+                                  hjust=1),
+        text = element_text(size=12))
+
+ggplot(irr_yr %>% filter(!is.na(Subbasin)), aes(x=scen, y=irr_sum))+
+  geom_boxplot()+
+  facet_wrap(~yr,scales = "free_y")+
+  theme(axis.text.x =element_text(angle=90,
+                                  hjust=1),
+        text = element_text(size=12))
+
+ggplot(irr_yr %>% filter(!is.na(Subbasin)), aes(x=scen, y=irr_sum))+
+  geom_boxplot()+
+  facet_wrap(~Rotacion_riego, scales = "free_y")+
+  theme(axis.text.x =element_text(angle=90,
+                                  hjust=1),
+        text = element_text(size=12))
+
+
+```
+
+
+```{r}
+ggplot(irr_yr %>% filter(!is.na(Subbasin)), aes(x=scen, y=irr_cost))+
+  geom_boxplot()+
+  facet_wrap(~Subbasin,scales = "free_y")+
+  theme(axis.text.x =element_text(angle=90,
+                                  hjust=1),
+        text = element_text(size=12))
+
+ggplot(irr_yr %>% filter(!is.na(Subbasin)), aes(x=scen, y=irr_cost))+
+  geom_boxplot()+
+  facet_wrap(~yr,scales = "free_y")+
+  theme(axis.text.x =element_text(angle=90,
+                                  hjust=1),
+        text = element_text(size=12))
+
+ggplot(irr_yr %>% filter(!is.na(Subbasin)), aes(x=scen, y=irr_cost))+
+  geom_boxplot()+
+  facet_wrap(~Rotacion_riego, scales = "free_y")+
+  theme(axis.text.x =element_text(angle=90,
+                                  hjust=1),
+        text = element_text(size=12))
+
+```
+
+```{r}
+ggplot(irr_yr %>% filter(!is.na(Subbasin)), aes(x=scen, y=irr_sum/area))+
+  geom_boxplot()+
+  facet_wrap(~Subbasin, scales = "free_y")+
+  theme(axis.text.x =element_text(angle=90,
+                                  hjust=1),
+        text = element_text(size=12))
+
+ggplot(irr_yr %>% filter(!is.na(Subbasin)), aes(x=scen, y=irr_sum/area))+
+  geom_boxplot()+
+  facet_wrap(~yr,scales = "free_y")+
+  theme(axis.text.x =element_text(angle=90,
+                                  hjust=1),
+        text = element_text(size=12))
+
+ggplot(irr_yr %>% filter(!is.na(Subbasin)), aes(x=scen, y=irr_sum/area))+
+  geom_boxplot()+
+  facet_wrap(~Rotacion_riego, scales = "free_y")+
+  theme(axis.text.x =element_text(angle=90,
+                                  hjust=1),
+        text = element_text(size=12))
+```
+
+```{r}
+ggplot(irr_yr %>% filter(!is.na(Subbasin)), aes(x=scen, y=irr_cost/area))+
+  geom_boxplot()+
+  facet_wrap(~Subbasin, scales = "free_y")+
+  theme(axis.text.x =element_text(angle=90,
+                                  hjust=1),
+        text = element_text(size=12))
+
+ggplot(irr_yr %>% filter(!is.na(Subbasin)), aes(x=scen, y=irr_cost/area))+
+  geom_boxplot()+
+  facet_wrap(~yr,scales = "free_y")+
+  theme(axis.text.x =element_text(angle=90,
+                                  hjust=1),
+        text = element_text(size=12))
+```
+
+
+```{r}
+ggplot(irr_yr %>% filter(!is.na(Subbasin)), aes(x=scen, y=irr_cost/area))+
+  geom_boxplot()+
+  facet_wrap(~Rotacion_riego, scales = "free_y")+
+  theme(axis.text.x =element_text(angle=90,
+                                  hjust=1),
+        text = element_text(size=12))
+
+```
+
+
+# Precipitacion
+
+```{r}
 plotly::ggplotly(
-ggplot(data=irr_yr %>% filter(!is.na(Subbasin)) , aes(x=Subbasin, y=irr_sum)) +
-  geom_boxplot()
+ggplot(env_results %>% filter(scenario=="sc1") %>% filter(id==1) , aes(x=yr,y=precip))+
+  geom_bar(stat="identity")+
+  coord_flip()
 )
 
+```
 
-irr2<-
-irr_yr %>% group_by(lu_mgt) %>%
-  summarise(irr=sum(irr_sum)); irr2
-
-plotly::ggplotly(
-ggplot(data=irr_yr  , aes(x=lu_mgt, y=irr_sum)) +
- geom_boxplot()
-)
-
-irr3<-
-irr_yr %>% group_by(yr) %>%
-  summarise(irr=sum(irr_sum)); irr3
+```{r}
 
 plotly::ggplotly(
-ggplot(data=irr_yr  , aes(x=yr, y=irr_sum)) +
-   geom_boxplot()
+ggplot(env_results %>% mutate(estacion=case_when(mon=="1" | mon=="2" | mon=="3"~"Verano", mon=="4" | mon=="5" | mon=="6"~"Otonio", mon=="7" | mon=="8" | mon=="9"~"Invierno", mon=="10" | mon=="11" | mon=="12"~"Primavera" )) ,
+       aes(x=yr,y=precip))+
+  geom_bar(stat="identity")+
+  facet_wrap(~estacion,scales = "free_y")+
+  #+  facet_wrap(~estacion,scales = "free_y")+
+    theme(axis.text.x =element_text(angle=90,
+                                  hjust=1),
+        text = element_text(size=12))
+  
 )
-
-irr4<-
-irr_yr %>% group_by(Subbasin, lu_mgt) %>%
-  summarise(irr=sum(irr_sum)); irr4
-
-plotly::ggplotly(
-ggplot(data=irr_yr, aes(x=Subbasin, y=irr_sum, fill=lu_mgt)) +
-  geom_bar(stat="identity")
-)
-
-
-
 ```
 
