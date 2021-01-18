@@ -10,23 +10,57 @@ model_scripts<- "C:/Users/Usuario/Desktop/Git/Tesis/San_Salvador/"
 
 #0 Put Scenarios-----
 sc1 <- c("", "", "irr_str80_unlim","irr_str80_unlim", "", "" )
-sc2 <- c("", "", "irr_str95_unlim","irr_str95_unlim", "", "" )
-sc3 <- c("", "", "irr_str40_unlim","irr_str40_unlim", "", "" )
+sc2 <- c("", "", "irr_str80_unlim","irr_str80_unlim", "", "" )
+sc3 <- c("", "", "irr_str80_unlim","irr_str80_unlim", "", "" )
 sc4 <- c("", "", "irr_str80_unlim","", "", "" )
-sc5 <- c("", "", "irr_str95_unlim","", "", "" )
-sc6 <- c("", "", "irr_str40_unlim","", "", "" )
+sc5 <- c("", "", "irr_str80_unlim","", "", "" )
+sc6 <- c("", "", "irr_str80_unlim","", "", "" )
 sc7 <- c("", "", "","irr_str80_unlim", "", "" )
-sc8 <- c("", "", "","irr_str95_unlim", "", "" )
-sc9 <- c("", "", "","irr_str40_unlim", "", "" )
+sc8 <- c("", "", "","irr_str80_unlim", "", "" )
+sc9 <- c("", "", "","irr_str80_unlim", "", "" )
 scbase <- c("", "", "","", "", "" )
 
 scenarios <-
 rbind(sc1, sc2, sc3, sc4, sc5, sc6, sc7, sc8, sc9, scbase)
 
+scenarios <-
+  rbind(sc1, sc2, sc3, sc4, sc5, sc6, sc7, sc8, sc9, scbase)
 
 for (sc in 1:dim(scenarios)[1]) {
- 
 
+setwd(model_files)  
+  
+ if(sc==1){
+        file_fert <- readLines(paste0("management_fert_1y6_high",".sch"))
+        write(file_fert, "management.sch")
+ }else if(sc==2){
+   file_fert <- readLines(paste0("management_fert_1y6_base",".sch"))
+   write(file_fert, "management.sch")
+ }else if(sc==3){
+   file_fert <- readLines(paste0("management_fert_1y6_low",".sch"))
+   write(file_fert, "management.sch")
+ }else if(sc==4){
+        file_fert <- readLines(paste0("management_fert_1_high",".sch"))
+        write(file_fert, "management.sch") 
+ }else if(sc==5){
+        file_fert <- readLines(paste0("management_fert_1_base",".sch"))
+        write(file_fert, "management.sch")
+ }else if(sc==6){
+   file_fert <- readLines(paste0("management_fert_1_low",".sch"))
+   write(file_fert, "management.sch")
+ }else if(sc==7){
+   file_fert <- readLines(paste0("management_fert_6_high",".sch"))
+   write(file_fert, "management.sch")
+ }else if(sc==8){
+   file_fert <- readLines(paste0("management_fert_6_base",".sch"))
+   write(file_fert, "management.sch")
+ }else if(sc==9){
+   file_fert <- readLines(paste0("management_fert_6_low",".sch"))
+   write(file_fert, "management.sch")
+ }else if(sc==10){
+   file_fert <- readLines(paste0("management_fert_base",".sch"))
+   write(file_fert, "management.sch")
+ }
 
 #1 Settings-----
 #1.1-Set time-----
@@ -121,8 +155,7 @@ set_irrigation(scenario = scenarios[sc,])
 #4-Correr el modelo
 t1 <-Sys.time()
 shell.exec(paste0(model_files, "Rev59.3_64rel.exe"))
-print("coso")
-Sys.sleep(60*27) # poner un tiempo que asegure la ejecucion
+Sys.sleep(60*28) # poner un tiempo que asegure la ejecucion
 t2 <- Sys.time()
 tiempo_corrida<- t2-t1; tiempo_corrida
 

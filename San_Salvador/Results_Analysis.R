@@ -38,10 +38,10 @@ parameters <- Reduce(function(x,y){
 )
 
 nom<- list(                     
-  "par_80_Rot1y6", "par_95_Rot1y6", "par_40_Rot1y6",
-  "par_80_Rot1", "par_95_Rot1", "par_40_Rot1",
-  "par_80_Rot6", "par_95_Rot6", "par_40_Rot6",
-  "par_base")
+  "par_high_Rot1y6", "par_base_Rot1y6", "par_low_Rot1y6",
+  "par_high_Rot1", "par_base_Rot1", "par_low_Rot1",
+  "par_high_Rot6", "par_base_Rot6", "par_low_Rot6",
+  "par_without")
 
 mean_name <- paste0("mean_", nom)
 sd_name <- paste0("sd_", nom)
@@ -53,7 +53,7 @@ parameters <-
   parameters %>% mutate(HRU=as.numeric(HRU)) %>% 
   arrange(HRU)
 
-#PROFITS MEDIA Y SD----
+#PROFITS/ha MEDIA Y SD----
 apply(parameters[,-1], 2, mean) %>% sort(decreasing = TRUE)
 
 #media de los profits 
@@ -124,45 +124,92 @@ ceq_rp <- Reduce(function(x,y){cbind(x=x, y=y)},ces)
 colnames(ceq_rp) <- cnames
 
 #Calc CE----
+#LOS RESULTADOS ESTAN POR HA, HAY QUE MULTIPLICAR POR 
+#EL AREA PARA OBTENER EL RESULTADO A NIVEL DE CUENCA
 
 ceq_rp <-
-  cbind(parameters %>% select("HRU", "Rotacion_riego"), ceq_rp)
+  cbind(parameters %>% dplyr::select("HRU", "Rotacion_riego"), ceq_rp)
 
-ceq_rp %>% select("HRU", "Rotacion_riego",contains("ce_ne")) %>%
+ceq_rp %>% dplyr::select("HRU", "Rotacion_riego",contains("ce_ne")) %>%
   apply(2, sum)
 
-#CE SUM SCENARIO----
-ceq_rp %>% select("HRU", "Rotacion_riego",contains("ce_ne")) %>%
-  filter(Rotacion_riego!=0) %>% select(-c("HRU", "Rotacion_riego")) %>%
-  apply(2, sum) %>% sort(decreasing = TRUE)
+#CE_SUM SCENARIO----
+#ce a nivel de HRU
+resultados<-
+ceq_rp %>% dplyr::select("HRU", "Rotacion_riego",contains("ce_ne")) %>%
+  filter(Rotacion_riego!=0) %>% select(-c("HRU", "Rotacion_riego"))
 
-#CE MEAN SCENARIO----
+resultados_1<-
+  ceq_rp %>% dplyr::select("HRU", "Rotacion_riego",contains("ce_ne")) %>%
+  filter(Rotacion_riego==1) %>% select(-c("HRU", "Rotacion_riego"))
+
+resultados_6<-
+  ceq_rp %>% select("HRU", "Rotacion_riego",contains("ce_ne")) %>%
+  filter(Rotacion_riego==6) %>% select(-c("HRU", "Rotacion_riego"))
+
+ar<-
+hru_info %>% filter(Rotacion_riego!=0) %>% select(area)
+
+ar_1<-
+  hru_info %>% filter(Rotacion_riego==1) %>% select(area)
+
+ar_6<-
+  hru_info %>% filter(Rotacion_riego==6) %>% select(area)
+
+#resultados con CE_ha*has para cada hru
+resultados_total<-
+mutate_all(resultados, function(x)x*ar) %>% 
+  as.matrix() %>% as.data.frame() 
+
+#media ponderada por el peso del area de la hru
+resultados_mean <-
+apply(resultados,2, function(x)sum(x*ar)/sum(ar)) %>%
+  matrix(nrow=8, ncol=10)
+
+resultados_mean_1 <-
+  apply(resultados_1,2, function(x)sum(x*ar_1)/sum(ar_1)) %>%
+  matrix(nrow=8, ncol=10)
+
+resultados_mean_6 <-
+  apply(resultados_6,2, function(x)sum(x*ar_6)/sum(ar_6)) %>%
+  matrix(nrow=8, ncol=10)
+
+#CE_ha MEAN, sin weight por area de la hru----
 ceq_rp %>% select("HRU", "Rotacion_riego",contains("ce_ne")) %>%
   filter(Rotacion_riego!=0) %>% select(-c("HRU", "Rotacion_riego")) %>%
   apply(2, mean) %>% sort(decreasing = TRUE)
 
 rname <- paste0("ARA_",seq(0, 0.5, by=0.07)) %>% as.character()
 
-cname <- c("Rot1y6_80", "Rot1y6_95", "Rot1y6_40",
-           "Rot1_80", "Rot1_95", "Rot1_40",
-           "Rot6_80", "Rot6_95", "Rot6_40",
+cname <- c("Rot1y6_high", "Rot1y6_base", "Rot1y6_low",
+           "Rot1_high", "Rot1_base", "Rot1_low",
+           "Rot6_high", "Rot6_base", "Rot6_low",
            "base")
-
+#suma de CEs en todas las hru de las rot 1y6
 resultados<-
-  ceq_rp %>% select("HRU", "Rotacion_riego",contains("ce_ne")) %>%
-  filter(Rotacion_riego!=0) %>% select(-c("HRU", "Rotacion_riego")) %>%
-  apply(2, sum) %>%  matrix(nrow=8, ncol=10) %>% 
+  apply(resultados_total, 2, sum) %>%  matrix(nrow=8, ncol=10) %>% 
   as.data.frame(row.names=rname)
 
-resultados_mean<-
-  ceq_rp %>% select("HRU", "Rotacion_riego",contains("ce_ne")) %>%
-  filter(Rotacion_riego!=0) %>% select(-c("HRU", "Rotacion_riego")) %>%
-  apply(2,mean) %>%  matrix(nrow=8, ncol=10) %>% 
+resultados_mean <-
+resultados_mean %>% 
+  as.data.frame(row.names=rname)
+
+resultados_mean_1 <-
+  resultados_mean_1 %>% 
+  as.data.frame(row.names=rname)
+
+resultados_mean_6 <-
+  resultados_mean_6 %>% 
   as.data.frame(row.names=rname)
 
 colnames(resultados)<-cname
 colnames(resultados_mean)<-cname
 
+colnames(resultados_mean_1)<-cname
+colnames(resultados_mean_6)<-cname
+
+#Los promedios de los CE son mayores en las 
+#hru regadas de rotacion 6
 
 resultados2 <-
   reshape2::melt(data.table::setDT(resultados, keep.rownames = TRUE), "rn") 
@@ -174,6 +221,7 @@ colnames(resultados2)<- c("ARA", "Escenario", "CE")
 colnames(resultados_mean2)<- c("ARA", "Escenario", "CE")
 
 library(scales)
+
 
 #HEATMAP SCENARIO&ARA----
 ggplot(resultados2 %>% filter(ARA!="ARA_0"), aes(x=ARA, y=Escenario, fill=CE))+
@@ -204,7 +252,6 @@ ggsave("CE_Calor_ARA_mean.jpeg",
 )
 
 #SCENARIO CE FACET-----
-
 ggplot(resultados2 %>% filter(ARA!="ARA_0") %>%
          mutate(ARA=str_remove(ARA, "ARA_")), aes(x=ARA, y=CE, col="red"))+
   geom_point()+
@@ -308,9 +355,9 @@ data_ce %>% mutate(ARA=case_when(str_detect(Escenario, "ne_0.049") ~ "0.049",
   select(-Escenario) %>% rename(Escenario=Scenario)
                      
                         
-ggplot(data_ce %>% filter(ARA == 0.007) , aes(x=reorder(Escenario, -CE), y=CE))+
+ggplot(data_ce  , aes(x=reorder(Escenario, -CE), y=CE))+
   geom_boxplot()+
-#  facet_wrap(~ARA, ncol=2, scales = "free_y")+
+  facet_wrap(~ARA, ncol=2, scales = "free_y")+
   theme(axis.text.x =element_text(angle=90,
                                   hjust=1),
         text = element_text(size=10),
@@ -339,46 +386,18 @@ ggsave("CE_ARA_Boxplot.jpeg",
        height =8.5, limitsize = FALSE
 )
 
-profit_
-
-
 #TABLAS CE----
 
 setwd(docs_res_dir)
+
 resultados %>% tibble::rownames_to_column("ARA") %>% write_csv2("CE_Escenarios.csv")
+resultados_mean %>% tibble::rownames_to_column("ARA") %>% write_csv2("CE_Escenarios.csv",
+                                                                     append = TRUE)
 
 #Resultados Ambientales-------
 
-setwd(paste0(model_scripts, "Data_Simulaciones_Eco"))
 
-env_files <-
-  list.files(pattern = "Env_Output_sc") %>% str_subset(pattern="RDS"); env_files
-#load("Econ_Output_SWAT_Sim_Without_Irrigation.RData")
-
-for (env in env_files) {
-  
-  envi <- str_remove(env, pattern = "Env_Output_")
-  envi <- str_remove(envi, pattern=".RDS")
-  envi <- str_remove(envi, pattern="SWAT_Sim_")
-  assign(paste0("env_",envi) ,
-           readRDS(env) %>% mutate(scenario=envi)
-        )
-  
-}
-
-
-env_f  <-
-  list(                     
-    env_sc1, env_sc2, env_sc3,
-    env_sc4, env_sc5, env_sc6,
-    env_sc7, env_sc8, env_sc9,
-    env_scbase
-  )
-
-
-data_env <- Reduce(function(x,y){rbind(x=x, y=y)},env_f) 
-
-ggplot(data_env %>% filter(channel==2),
+ggplot(data_env %>% filter(channel==1),
        aes(x=reorder(scenario,-N_Concentration), y=N_Concentration))+
   geom_boxplot()+
   theme(axis.text.x =element_text(angle=90,
@@ -393,10 +412,14 @@ ggsave("Nit_Boxplot.jpeg",
        #height =
 )
 
+
+
+
 ggplot(data_env %>% filter(channel==2) %>% mutate(mon=as.numeric(mon)),
        aes(x=reorder(scenario, -N_Concentration), y=N_Concentration))+
   geom_boxplot()+
-  facet_wrap(~mon, scales = "free_y")+
+  facet_wrap(~mon #, scales = "free_y"
+             )+
   theme(axis.text.x =element_text(angle=90,
                                   hjust=1),
         text = element_text(size=7.5),
@@ -432,7 +455,8 @@ ggplot(data_env %>% filter(channel==2) %>% mutate(mon=as.numeric(mon)),
         text = element_text(size=10),
         legend.position="none") +
   labs(x="Escenario", y="P_Concentration")+
-  facet_wrap(~mon, scales = "free_y")
+  facet_wrap(~mon , scales = "free_y"
+             )
 
 ggsave("Ph_Scenarios_Boxplot.jpeg",
        path = graphs_dir
@@ -472,4 +496,160 @@ ggsave("Caudal_Escenario_Boxplot.jpeg",
        #height =
 )
 
+#Subbasin_Env_Res----
 
+env_sub_dir <-
+"C:/Users/Usuario/Desktop/Git/Tesis/San_Salvador/Resultados_Ambientales/Subbasin_Env_Results_Scenarios.RDS"
+
+#umbrales ambientales 
+p_threshold <- 0.025 #normativa
+n_threshold <- 1 #sugerido en doc mgap 
+
+res_sub <-
+readRDS(env_sub_dir)
+
+res_sub
+
+res_sub %>% mutate(P_viol=case_when(P_Concentration>=p_threshold ~ 1,
+                                    P_Concentration< p_threshold ~ 0),
+                   N_viol=case_when(N_Concentration>=n_threshold ~ 1,
+                                    N_Concentration< n_threshold ~ 0)) %>%
+group_by(scenario) %>%
+summarise(N_v=sum(N_viol)/length(N_viol),
+          P_v=sum(P_viol)/length(P_viol))  
+
+res_sub %>% mutate(P_viol=case_when(P_Concentration>=p_threshold ~ 1,
+                                    P_Concentration< p_threshold ~ 0),
+                   N_viol=case_when(N_Concentration>=n_threshold ~ 1,
+                                    N_Concentration< n_threshold ~ 0)) %>%
+  group_by(scenario, yr) %>%
+  summarise(N_v=sum(N_viol)/length(N_viol),
+            P_v=sum(P_viol)/length(P_viol))
+
+res_sub %>% mutate(P_viol=case_when(P_Concentration>=p_threshold ~ 1,
+                                    P_Concentration< p_threshold ~ 0),
+                   N_viol=case_when(N_Concentration>=n_threshold ~ 1,
+                                    N_Concentration< n_threshold ~ 0)) %>%
+  group_by( subbasin) %>%
+  summarise(N_v=sum(N_viol)/length(N_viol),
+            P_v=sum(P_viol)/length(P_viol))
+
+
+
+
+#Elasticidades-------
+
+#si se quiere usar el valor total de los CE en la cuenca (rot1y6)
+#en vez de los valores prom por ha, usar resultados en vez
+#de resultados_mean
+
+variaciones<-
+data_env %>% group_by(scenario) %>%
+  filter(channel==2) %>%
+  summarise(n_mean=mean(N_Concentration),
+            n_max=max(N_Concentration),
+            p_mean=mean(P_Concentration),
+            p_max=max(P_Concentration)) %>%
+  cbind(resultados_mean %>% select(-rn) %>% t())
+
+colnames(variaciones)[6:13] <- 
+  paste0( "ARA_" , seq(0,0.049, by=0.007))
+
+variaciones_brutas<-
+apply(variaciones[,-1],
+      1,
+      function(x)(x-variaciones[10,-1])
+      ) %>% 
+      map_df(rbind)  
+
+variaciones_porcent <-
+  apply(variaciones[,-1],
+        1,
+        function(x)(x/variaciones[10,-1])
+        ) %>% 
+          map_df(rbind)  
+  
+variaciones_mixta <- #aca dejo la var porcent de N y P
+                     #con la bruta de los CE
+  apply(variaciones[,2:5],
+        1,
+        function(x)(x/variaciones[10,2:5])
+  ) %>% 
+  map_df(rbind)  %>% cbind(
+    apply(variaciones[,6:13],
+          1,
+          function(x)(x-variaciones[10,6:13])
+    ) %>% 
+      map_df(rbind)
+  )
+
+
+
+#elasticidades----
+elasticidades <-
+apply(variaciones_1[,1:4],
+      2,
+      function(x)(variaciones_1[,5:12]/x)
+      )
+rownames(elasticidades[[1]] )<- paste0("SC", seq(1,10,by=1))
+
+reshape2::melt(elasticidades[[1]], )
+
+mat_nitro<-
+reshape2::melt(data.table::setDT(elasticidades[[1]], keep.rownames = TRUE), "rn") 
+colnames(mat_nitro)<-c("Escenario", "ARA", "Elasticidad")
+
+mat_nitro %>%
+mutate(Elasticidad_ha=Elasticidad/sum(ar))
+
+
+
+
+ggplot(mat_nitro %>% filter(Escenario!="SC10") , aes(x=ARA, y=Escenario, fill=Elasticidad))+
+  geom_tile()+
+  scale_fill_gradient(low = "yellow", high = "red", labels=comma)+
+  theme(axis.text.x =element_text(angle=90,
+                                  hjust=1),
+        text = element_text(size=7.5))
+
+variaciones[1,-1]/variaciones[10,-1]
+
+for (i in 1:9) {
+  (variaciones[i,-1]-variaciones[10,-1]) %>% print()
+}
+variaciones[1,-1]-variaciones[10,-1]
+variaciones[2,-1]-variaciones[10,-1]
+variaciones[3,-1]-variaciones[10,-1]
+variaciones[4,-1]-variaciones[10,-1]
+variaciones[5,-1]-variaciones[10,-1]
+variaciones[6,-1]-variaciones[10,-1]
+variaciones[7,-1]-variaciones[10,-1]
+variaciones[8,-1]-variaciones[10,-1]
+variaciones[9,-1]-variaciones[10,-1]
+
+variaciones[,-1]-variaciones[10,-1]
+
+
+#hacer todo respecto al esc base
+variaciones %>% select(-scenario) %>% as.matrix() %>%
+  diff %>% as.data.frame()
+  mutate_at(vars(-scenario), diff)
+
+resultados %>% group_by(rn) %>% mean(base)
+resultados %>% select(-rn) %>% t() 
+  
+variaciones_1<-
+variaciones %>% select(-scenario) %>% as.matrix() %>%
+diff %>% as.data.frame()
+
+colnames(variaciones_1)[5:12] <- 
+  paste0( "ARA_" , seq(0,0.049, by=0.007))
+
+variaciones_1 %>% mutate(incremento_0=n_mean/ARA_0,
+                         incremento_0.007=n_mean/ARA_0.007,
+                         incremento_0.14=n_mean/ARA_0.014,
+                         incremento_0.21=n_mean/ARA_0.021,
+                         incremento_0.28=n_mean/ARA_0.028,
+                         incremento_0.35=n_mean/ARA_0.035,
+                         incremento_0.42=n_mean/ARA_0.042,
+                         incremento_0.49=n_mean/ARA_0.049)

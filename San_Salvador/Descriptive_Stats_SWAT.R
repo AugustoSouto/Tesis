@@ -11,7 +11,7 @@ graphs_dir<- "C:/Users/Usuario/Desktop/Git/Tesis/San_Salvador/Graficos_Salidas"
 setwd(paste0(model_scripts, "Data_Simulaciones_SWAT"))
 
 scenarios <-
-  list.files(paste0(model_scripts, "Data_Simulaciones_SWAT"), pattern="RData"); scenarios
+  list.files(paste0(model_scripts, "Data_Simulaciones_SWAT"), pattern="sc"); scenarios
 
 for(scenario in scenarios){
   
@@ -67,10 +67,10 @@ hru_info2 %>% group_by(rotacion) %>% summarise(
          )  
   
   
-  Ph_lim <- 0.25
-  N_lim <- 10
+  Ph_lim <- 0.025
+  N_lim <- 1
   
-#Nitrogeno----
+#Nitrogeno---- 
   
   ggplot(environmental_output %>%
            filter(channel==2) %>% 
