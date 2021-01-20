@@ -3,6 +3,7 @@ rm(list=ls())
 library(tidyverse)
 
 model_scripts<- "C:/Users/Usuario/Desktop/Git/Tesis/San_Salvador/"
+
 setwd(paste0(model_scripts, "Data_Simulaciones_Eco"))
 
 env_files <-
@@ -46,6 +47,7 @@ subbasin_map <-
   )
 
 
+
 library(RSQLite)
 
 ## connect to db
@@ -67,7 +69,6 @@ raster::crs(subbasin_map) <-
 
 setwd("C:/Users/Usuario/Desktop/Git/Tesis/San_Salvador")
 
-
 hru_info <-
   readRDS("hru_info.RDS")
 
@@ -80,6 +81,7 @@ sub_chan <-
 hru_info <-
 plyr::join(hru_info, sub_hru, by="hru")
 
+saveRDS(hru_info,"Resultados_Ambientales/hru_info.RDS")
 
 #RESULTADOS----
 
@@ -106,7 +108,7 @@ subbasins_chan <-
 subbasins %>% group_by(subbasin) %>% top_n(1, areac) 
 
 subbasins_chan <-
-subbasins_chan %>%  dplyr::select(id)
+subbasins_chan %>%  dplyr::select(id, subbasin)
 
 dbDisconnect(con)
 

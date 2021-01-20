@@ -185,6 +185,7 @@ cname <- c("Rot1y6_high", "Rot1y6_base", "Rot1y6_low",
            "Rot1_high", "Rot1_base", "Rot1_low",
            "Rot6_high", "Rot6_base", "Rot6_low",
            "base")
+
 #suma de CEs en todas las hru de las rot 1y6
 resultados<-
   apply(resultados_total, 2, sum) %>%  matrix(nrow=8, ncol=10) %>% 
@@ -394,6 +395,18 @@ resultados %>% tibble::rownames_to_column("ARA") %>% write_csv2("CE_Escenarios.c
 resultados_mean %>% tibble::rownames_to_column("ARA") %>% write_csv2("CE_Escenarios.csv",
                                                                      append = TRUE)
 
+saveRDS(resultados, "C:/Users/Usuario/Desktop/Git/Tesis/San_Salvador/Data_Simulaciones_Eco/Res_Econ_Tot.RDS")
+saveRDS(resultados_1, "C:/Users/Usuario/Desktop/Git/Tesis/San_Salvador/Data_Simulaciones_Eco/Res_Econ_Tot_1.RDS")
+saveRDS(resultados_6, "C:/Users/Usuario/Desktop/Git/Tesis/San_Salvador/Data_Simulaciones_Eco/Res_Econ_Tot_6.RDS")
+
+saveRDS(resultados_mean, "C:/Users/Usuario/Desktop/Git/Tesis/San_Salvador/Res_Econ_ha.RDS")
+saveRDS(resultados_mean_1, "C:/Users/Usuario/Desktop/Git/Tesis/San_Salvador/Res_Econ_ha_1.RDS")
+saveRDS(resultados_mean_6, "C:/Users/Usuario/Desktop/Git/Tesis/San_Salvador/Res_Econ_ha_6.RDS")
+
+
+#Save Here Econ Results!----
+
+
 #Resultados Ambientales-------
 
 
@@ -411,9 +424,6 @@ ggsave("Nit_Boxplot.jpeg",
        #width =
        #height =
 )
-
-
-
 
 ggplot(data_env %>% filter(channel==2) %>% mutate(mon=as.numeric(mon)),
        aes(x=reorder(scenario, -N_Concentration), y=N_Concentration))+
@@ -502,154 +512,4 @@ env_sub_dir <-
 "C:/Users/Usuario/Desktop/Git/Tesis/San_Salvador/Resultados_Ambientales/Subbasin_Env_Results_Scenarios.RDS"
 
 #umbrales ambientales 
-p_threshold <- 0.025 #normativa
-n_threshold <- 1 #sugerido en doc mgap 
 
-res_sub <-
-readRDS(env_sub_dir)
-
-res_sub
-
-res_sub %>% mutate(P_viol=case_when(P_Concentration>=p_threshold ~ 1,
-                                    P_Concentration< p_threshold ~ 0),
-                   N_viol=case_when(N_Concentration>=n_threshold ~ 1,
-                                    N_Concentration< n_threshold ~ 0)) %>%
-group_by(scenario) %>%
-summarise(N_v=sum(N_viol)/length(N_viol),
-          P_v=sum(P_viol)/length(P_viol))  
-
-res_sub %>% mutate(P_viol=case_when(P_Concentration>=p_threshold ~ 1,
-                                    P_Concentration< p_threshold ~ 0),
-                   N_viol=case_when(N_Concentration>=n_threshold ~ 1,
-                                    N_Concentration< n_threshold ~ 0)) %>%
-  group_by(scenario, yr) %>%
-  summarise(N_v=sum(N_viol)/length(N_viol),
-            P_v=sum(P_viol)/length(P_viol))
-
-res_sub %>% mutate(P_viol=case_when(P_Concentration>=p_threshold ~ 1,
-                                    P_Concentration< p_threshold ~ 0),
-                   N_viol=case_when(N_Concentration>=n_threshold ~ 1,
-                                    N_Concentration< n_threshold ~ 0)) %>%
-  group_by( subbasin) %>%
-  summarise(N_v=sum(N_viol)/length(N_viol),
-            P_v=sum(P_viol)/length(P_viol))
-
-
-
-
-#Elasticidades-------
-
-#si se quiere usar el valor total de los CE en la cuenca (rot1y6)
-#en vez de los valores prom por ha, usar resultados en vez
-#de resultados_mean
-
-variaciones<-
-data_env %>% group_by(scenario) %>%
-  filter(channel==2) %>%
-  summarise(n_mean=mean(N_Concentration),
-            n_max=max(N_Concentration),
-            p_mean=mean(P_Concentration),
-            p_max=max(P_Concentration)) %>%
-  cbind(resultados_mean %>% select(-rn) %>% t())
-
-colnames(variaciones)[6:13] <- 
-  paste0( "ARA_" , seq(0,0.049, by=0.007))
-
-variaciones_brutas<-
-apply(variaciones[,-1],
-      1,
-      function(x)(x-variaciones[10,-1])
-      ) %>% 
-      map_df(rbind)  
-
-variaciones_porcent <-
-  apply(variaciones[,-1],
-        1,
-        function(x)(x/variaciones[10,-1])
-        ) %>% 
-          map_df(rbind)  
-  
-variaciones_mixta <- #aca dejo la var porcent de N y P
-                     #con la bruta de los CE
-  apply(variaciones[,2:5],
-        1,
-        function(x)(x/variaciones[10,2:5])
-  ) %>% 
-  map_df(rbind)  %>% cbind(
-    apply(variaciones[,6:13],
-          1,
-          function(x)(x-variaciones[10,6:13])
-    ) %>% 
-      map_df(rbind)
-  )
-
-
-
-#elasticidades----
-elasticidades <-
-apply(variaciones_1[,1:4],
-      2,
-      function(x)(variaciones_1[,5:12]/x)
-      )
-rownames(elasticidades[[1]] )<- paste0("SC", seq(1,10,by=1))
-
-reshape2::melt(elasticidades[[1]], )
-
-mat_nitro<-
-reshape2::melt(data.table::setDT(elasticidades[[1]], keep.rownames = TRUE), "rn") 
-colnames(mat_nitro)<-c("Escenario", "ARA", "Elasticidad")
-
-mat_nitro %>%
-mutate(Elasticidad_ha=Elasticidad/sum(ar))
-
-
-
-
-ggplot(mat_nitro %>% filter(Escenario!="SC10") , aes(x=ARA, y=Escenario, fill=Elasticidad))+
-  geom_tile()+
-  scale_fill_gradient(low = "yellow", high = "red", labels=comma)+
-  theme(axis.text.x =element_text(angle=90,
-                                  hjust=1),
-        text = element_text(size=7.5))
-
-variaciones[1,-1]/variaciones[10,-1]
-
-for (i in 1:9) {
-  (variaciones[i,-1]-variaciones[10,-1]) %>% print()
-}
-variaciones[1,-1]-variaciones[10,-1]
-variaciones[2,-1]-variaciones[10,-1]
-variaciones[3,-1]-variaciones[10,-1]
-variaciones[4,-1]-variaciones[10,-1]
-variaciones[5,-1]-variaciones[10,-1]
-variaciones[6,-1]-variaciones[10,-1]
-variaciones[7,-1]-variaciones[10,-1]
-variaciones[8,-1]-variaciones[10,-1]
-variaciones[9,-1]-variaciones[10,-1]
-
-variaciones[,-1]-variaciones[10,-1]
-
-
-#hacer todo respecto al esc base
-variaciones %>% select(-scenario) %>% as.matrix() %>%
-  diff %>% as.data.frame()
-  mutate_at(vars(-scenario), diff)
-
-resultados %>% group_by(rn) %>% mean(base)
-resultados %>% select(-rn) %>% t() 
-  
-variaciones_1<-
-variaciones %>% select(-scenario) %>% as.matrix() %>%
-diff %>% as.data.frame()
-
-colnames(variaciones_1)[5:12] <- 
-  paste0( "ARA_" , seq(0,0.049, by=0.007))
-
-variaciones_1 %>% mutate(incremento_0=n_mean/ARA_0,
-                         incremento_0.007=n_mean/ARA_0.007,
-                         incremento_0.14=n_mean/ARA_0.014,
-                         incremento_0.21=n_mean/ARA_0.021,
-                         incremento_0.28=n_mean/ARA_0.028,
-                         incremento_0.35=n_mean/ARA_0.035,
-                         incremento_0.42=n_mean/ARA_0.042,
-                         incremento_0.49=n_mean/ARA_0.049)

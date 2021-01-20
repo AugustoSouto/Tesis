@@ -1,99 +1,68 @@
-#IDENTIFICACIÓN DE LAS SUBCUENCAS Y SUS HRU#
+rm(list = ls())
 
-rm(list=ls())
-library(tidyve)
+library(foreign)
+hru = read.dbf("C:/Users/Usuario/Desktop/SWATsept/SSalvador_LU2018_v0/Watershed/Shapes/hrus2.dbf")
 
+hru = hru[,c("Subbasin", "HRUS")]
+con = strsplit(paste(hru$HRUS),split = ", ")
 
-subbasin_map <-
-rgdal::readOGR(dsn="C:/Users/Usuario/Desktop/SWATsept/SSalvador_LU2018_v0/Scenarios/Default/Results/subs.shp"
-               #,
-               #layer ="sub" 
-               )
-
-hrus_map <-
-  rgdal::readOGR(dsn="C:/Users/Usuario/Desktop/SWATsept/SSalvador_LU2018_v0/Scenarios/Default/Results/hrus.shp"
-                 #,
-                 #layer ="sub" 
-  )
-
-list.files("C:/Users/Usuario/Desktop/SWATsept/SSalvador_LU2018_v0/Watershed")
-
-hrus1_map <-
-  rgdal::readOGR(dsn="C:/Users/Usuario/Desktop/SWATsept/SSalvador_LU2018_v0/Watershed/Shapes/hrus1.shp"
-                 #,
-                 #layer ="hrus1" 
-  )
-
-hrus1_map <-
-  rgdal::readOGR(dsn="C:/Users/Usuario/Desktop/SWATsept/SSalvador_LU2018_v0/Watershed/Shapes/hrus1.shp" )
-
-hrus2_map <-
-  rgdal::readOGR(dsn="C:/Users/Usuario/Desktop/SWATsept/SSalvador_LU2018_v0/Watershed/Shapes/hrus2.shp")
-
-
-library(raster)
-
-raster::crs(subbasin_map) <- 
-  CRS("+proj=utm +zone=21 +south +datum=WGS84 +units=m +no_defs +ellps=WGS84 +towgs84=0,0,0")
-
-raster::crs(hrus_map) <- 
-  CRS("+proj=utm +zone=21 +south +datum=WGS84 +units=m +no_defs +ellps=WGS84 +towgs84=0,0,0")
-
-raster::crs(hrus1_map) <- 
-  CRS("+proj=utm +zone=21 +south +datum=WGS84 +units=m +no_defs +ellps=WGS84 +towgs84=0,0,0")
-
-raster::crs(hrus2_map) <- 
-  CRS("+proj=utm +zone=21 +south +datum=WGS84 +units=m +no_defs +ellps=WGS84 +towgs84=0,0,0")
-
-
-
-plot(subbasin_map)
-
-plot(hrus_map)
-
-plot(hrus1_map)
-
-plot(hrus2_map)
-
-hrus1_map@data %>% head
-hrus2_map@data %>% View
-
-hru_list <-
-hrus2_map@data$HRUS %>% str_split(patter=",")
-
-hru_data <-
-matrix(ncol=5, nrow=hru_list %>% length)
-
-for (i in 1:dim(hru_data)[1]) {
-  for (j in 1:dim(hru_data)[2]) {
-
-    hru_data[i,j]<-hru_list[[i]][j]    
+myhru = matrix(ncol=2,nrow = 0)
+for(i in 1:length(con)){
+  for(j in 1:length(con[[i]])){
+    myhru = rbind(myhru,
+                  as.numeric(c(hru$Subbasin[i],con[[i]][j]))) 
   }
-
 }
 
-hru_data<-
-hru_data %>% as.data.frame()
-colnames(hru_data)<- c("hru1", "hru2", "hru3", "hru4", "hru5")
+myhru = myhru[order(myhru[,2]),]
+myhru = myhru[-1,]
 
-hrus2_map@data <- cbind(hrus2_map@data, hru_data) 
+colnames(myhru) = c("subbasin","hru")
+myhru = data.frame(myhru)
 
-sub_hru <- rbind(
-  hrus2_map@data %>% dplyr::select(Subbasin, hru1) %>% rename(hru=hru1),
-  hrus2_map@data %>% dplyr::select(Subbasin, hru2) %>% rename(hru=hru2),
-  hrus2_map@data %>% dplyr::select(Subbasin, hru3) %>% rename(hru=hru3),
-  hrus2_map@data %>% dplyr::select(Subbasin, hru4) %>% rename(hru=hru4)
-  )
+ar = read.fwf("C:/Users/Usuario/Desktop/SWATsept/SSalvador_LU2018_v0/Scenarios/Default/TxtInOut/hru.con",widths = c(37,14), n=5204, colClasses=c("NULL", "numeric"), skip = 2)
+myhru$area = ar$V2
 
-sub_hru <-
-sub_hru %>% mutate(Subbasin=as.numeric(Subbasin),
-                   hru=as.numeric(hru)) %>%
-  arrange(hru) %>% filter(!is.na(hru))
+head(myhru)
 
-setwd("C:/Users/Usuario/Desktop/Git/Tesis/San_Salvador")
-saveRDS(sub_hru, "sub_hru.RDS")
+rot = read.fwf("C:/Users/Usuario/Desktop/SWATsept/SSalvador_LU2018_v0/Scenarios/Default/TxtInOut/hru-data.hru",skip = 2,widths = c(81,18),colClasses=c("NULL", "character"))
+rot = rot$V2
+rot = gsub("\\s", "", rot)
 
-hrus2_map@data %>% group_by(Subbasin) %>% dplyr::select(hru1)
+myhru$landuse = rot
 
 
+head(myhru)
+#################################################
+library("RSQLite")
 
+## connect to db
+con <- dbConnect(drv=RSQLite::SQLite(), dbname="C:/Users/Usuario/Desktop/SWATsept/SSalvador_LU2018_v0/SSalvador_LU2018_v0.sqlite")
+
+
+
+## list all tables
+tables <- dbListTables(con)
+
+## exclude sqlite_sequence (contains table information)
+tables <- tables[tables != "sqlite_sequence"]
+
+tables[134]
+landuse_tab = dbGetQuery(conn=con, statement=paste("SELECT * FROM '", tables[[134]], "'", sep=""))[,c("id","name","mgt_id")]
+
+tables[139]
+mgt_tab = dbGetQuery(conn=con, statement=paste("SELECT * FROM '", tables[[139]], "'", sep=""))
+
+
+landuse_tab
+
+myhru$mgt_id = landuse_tab$mgt_id[match(myhru$landuse,landuse_tab$name)]
+myhru$rot = mgt_tab$name[myhru$mgt_id]
+myhru$rot = ifelse(is.na(myhru$rot),myhru$landuse, myhru$rot)
+
+
+summary(myhru)
+
+unique(myhru$rot)
+
+saveRDS(myhru,"C:/Users/Usuario/Desktop/Git/Tesis/San_Salvador/Resultados_Ambientales/hru_info.RDS")
