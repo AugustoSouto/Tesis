@@ -35,6 +35,9 @@ irr_yr <-
 hru_info <-
   readRDS("C:/Users/Usuario/Desktop/Git/Tesis/San_Salvador/Resultados_Ambientales/hru_info.RDS")
 
+subs <- 
+  readRDS("C:/Users/Usuario/Desktop/Git/Tesis/San_Salvador/Resultados_Ambientales/subs.RDS")
+
 #######THRESHOLD VALUES FOR N AND P CONCENTRATION ON WATER ###########
 
 p_threshold <- 0.025 #normativa
@@ -129,30 +132,51 @@ colnames(mat_nitro)<-c("Escenario", "ARA", "Elasticidad")
 
 #Spatial Analysis----
 
-#Riego en Subcuencas----
+#1,2,3, 12, 9, 13
+
+#Riego en Subcuencas---
 
 areas_sub <-
-aggregate(area~lu_mgt+Subbasin, data=hru_info, FUN=sum) %>% 
-  group_by(Subbasin) %>% 
+aggregate(area~subbasin+rot, data=hru_info, FUN=sum) %>% 
+  group_by(subbasin) %>% 
   mutate(porc_luse=area/sum(area),
-         rot_riego=case_when(lu_mgt=="agrc3_lum" ~ "1",
-                             lu_mgt=="agrc4_lum" ~ "6",
-                             lu_mgt!="agrc3_lum" & lu_mgt!="agrc4_lum"  ~ "0")
-         ); areas_sub
+         rot_riego=case_when(rot=="agrc3_rot" ~ "1",
+                             rot=="agrc4_rot" ~ "6",
+                             rot!="agrc3_rot" & rot!="agrc4_rot"  ~ "0")
+         ) %>% arrange(subbasin); areas_sub
 
 areas_sub_riego <-
-aggregate(area~rot_riego+Subbasin, data=areas_sub, FUN=sum)  %>% 
-  group_by(Subbasin) %>% 
+aggregate(area~rot_riego+subbasin, data=areas_sub, FUN=sum)  %>% 
+  group_by(subbasin) %>% 
   mutate(porc_luse=area/sum(area),
          no_regado=ifelse(rot_riego=="0",1,0))
 
-porcentaje_riego_subcuencas <-
-aggregate(porc_luse~Subbasin+no_regado, data=areas_sub_riego, FUN=sum) %>%
-rename(porc_no_regado=porc_luse) %>%
-mutate(porc_regado=1-porc_no_regado)
+porcentaje_rots <-
+aggregate(porc_luse~subbasin+rot_riego,
+          data=areas_sub_riego,
+          FUN=sum) %>%
+spread(rot_riego, porc_luse) %>%
+rename("rot_0"="0", "rot_1"="1","rot_6"="6") %>%
+mutate(porc_regado=rot_1+rot_6,
+       porc_no_regado=rot_0)  
 
+#la parte baja de la cuenca es la que tiene mas 
+#riego, en particular, 12, 11, 1, 5, 13, 9
+#las de menos riego son 10, 3, 2, 7, 6, 4, 8
+porcentaje_rots %>%
+  arrange(desc(porc_regado))
 
-#subbasin 1 
+#12, 11, 1, 5, 13, 9 son las que tienen mas rot 1
+porcentaje_rots %>%
+  arrange(desc(rot_1))
+#12, 11, 1, 5, 13 y 9 son las que tienen mas rot 6
+porcentaje_rots %>%
+  arrange(desc(rot_6))
+
+#o sea, las cuencas con mas rot 1 y 6 son practicamente las mismas
+#la subcuenca 5 esta muy arriba pero es chica
+#la subcuenca 9 esta en la mitad norte de la cuenca mas o menos
+
 
 ggplot(mat_nitro %>% filter(Escenario!="SC10") , aes(x=ARA, y=Escenario, fill=Elasticidad))+
   geom_tile()+
@@ -162,3 +186,87 @@ ggplot(mat_nitro %>% filter(Escenario!="SC10") , aes(x=ARA, y=Escenario, fill=El
         text = element_text(size=7.5))
 
 
+
+
+#All Subbasins Results------
+#iterate in all subbasins computing:
+#nutrient discharge, concentration and econ results
+#nutrient discharge & concentration sensivility to scenarios
+#nutrient discharge & concentration elasticity 
+
+for(i in 1:13){
+  print(i)
+  
+  res_sub_outlet <-
+    res_sub %>% group_by(scenario) %>%
+    filter(subbasin==i) %>%
+    summarise(n_mean=mean(N_Concentration),
+              n_max=max(N_Concentration),
+              p_mean=mean(P_Concentration),
+              p_max=max(P_Concentration),
+              n_viol=mean(N_viol),
+              p_viol=mean(P_viol)) %>%
+    cbind(econ_ha %>% dplyr::select(-rn) %>% t()); res_sub_outlet
+  
+  
+  colnames(res_sub_outlet)[8:15] <- 
+    paste0( "ARA_" , seq(0,0.049, by=0.007))
+  
+  res_sub_outlet_brutas<-
+    apply(res_sub_outlet[,-1],
+          1,
+          function(x)(x-res_sub_outlet[10,-1])
+    ) %>% 
+    map_df(rbind); res_sub_outlet_brutas  
+  
+  #When the CE is negative, compute the variation between scenarios as:
+  #variation/abs(CE) 
+  
+  res_sub_outlet_porcent <-
+    apply(res_sub_outlet[,-1],
+          1 ,
+          function(x) (x-res_sub_outlet[10,-1])/abs(res_sub_outlet[10,-1])
+    ) %>% 
+    map_df(rbind);res_sub_outlet_porcent  
+  
+
+  
+  elasticidades <-
+    apply(res_sub_outlet_porcent[,1:6],
+          2,
+          function(x)(res_sub_outlet_porcent[,7:14]/x)
+    )
+  
+  model_scripts<- "C:/Users/Usuario/Desktop/Git/Tesis/San_Salvador/"
+  setwd(paste0(model_scripts, "Resultados_x_Subcuenca")) 
+  
+  row<-1
+  
+  out<- openxlsx::createWorkbook() 
+  openxlsx::addWorksheet(out, "Resultados")
+  openxlsx::addWorksheet(out, "Variaciones_Brutas")
+  openxlsx::addWorksheet(out, "Variaciones_Porcent")
+  openxlsx::addWorksheet(out, "elast_nmean")
+  openxlsx::addWorksheet(out, "elast_nmax")
+  openxlsx::addWorksheet(out, "elast_pmean")
+  openxlsx::addWorksheet(out, "elast_pmax")
+  openxlsx::addWorksheet(out, "elast_nviol")
+  openxlsx::addWorksheet(out, "elast_pviol")
+  openxlsx::writeData(out, x=res_sub_outlet, sheet="Resultados")
+  openxlsx::writeData(out, x=res_sub_outlet_brutas, sheet="Variaciones_Brutas")
+  openxlsx::writeData(out,x=res_sub_outlet_porcent,sheet="Variaciones_Porcent")
+  openxlsx::writeData(out,x=elasticidades[[1]],sheet="elast_nmean",startCol=1, startRow = row)
+  openxlsx::writeData(out,x=elasticidades[[2]],sheet="elast_nmax",startCol=1, startRow = row)
+  openxlsx::writeData(out,x=elasticidades[[3]],sheet="elast_pmean",startCol=1, startRow = row)
+  openxlsx::writeData(out,x=elasticidades[[4]],sheet="elast_pmax",startCol=1, startRow = row)
+  openxlsx::writeData(out,x=elasticidades[[5]],sheet="elast_nviol",startCol=1, startRow = row)
+  openxlsx::writeData(out,x=elasticidades[[6]],sheet="elast_pviol",startCol=1, startRow = row)
+  
+  openxlsx::saveWorkbook(out, paste0("Resultados_Subcuenca_",i,".xlsx"), overwrite = TRUE)
+  
+  #write_xlsx(sheets, "C:/Users/Usuario/Desktop/Git/Tesis/San_Salvador/Res_Econ_ha.RDS" )
+  #write.xlsx(res_sub_outlet, file= paste0("Resultados_Subbasin_",i,".xlsx"), sheetName="resultados")
+  #write.xlsx(res_sub_outlet_brutas, paste0("Resultados_Subbasin_",i,".xlsx"),sheetName="res_var_brut", append=TRUE )
+  #write.xlsx(res_sub_outlet_porcent, paste0("Resultados_Subbasin_",i,".xlsx"), sheetName="res_var_por", append=TRUE)
+  #write.xlsx(elasticidades, paste0("Resultados_Subbasin_",i,".xlsx"), sheetName="res_elasticidades", append=TRUE)
+}

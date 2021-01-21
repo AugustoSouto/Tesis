@@ -78,10 +78,7 @@ sub_hru <-
 sub_chan <- 
   readRDS("sub_chan.RDS")
 
-hru_info <-
-plyr::join(hru_info, sub_hru, by="hru")
 
-saveRDS(hru_info,"Resultados_Ambientales/hru_info.RDS")
 
 #RESULTADOS----
 
