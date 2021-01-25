@@ -1,0 +1,4 @@
+Comentarios Sobre los Resultados:
+
+-Las cantidades de N se violan en todas las subcuencas.
+-Las cantidades de P se violan en casi todas. En algunas de la parte baja no se viola, por lo que es ambiguo el cumplimiento.

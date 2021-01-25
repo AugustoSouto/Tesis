@@ -1,0 +1,36 @@
+Escenarios:
+Todos los escenarios de riego estan bajo riego en el umbral 0.8, es decir, se asegura un nivel de al menor 80% del agua.
+
+Rotaciones fertilizadas y nivel de fertilizacion
+1-1y6_Alto
+2-1y6_Medio
+3-1y6_Bajo
+4-1_Alto
+5-1_Medio
+6-1_Bajo
+7-6_Alto
+8-6_Medio
+9-6_Bajo
+10-Escenario base sin riego
+
+Las rotaciones tienen el mismo orden que las filas del excel.
+Por eso en la ultima fila no hay variaciones, ya que se compara al escenario base consigo mismo.
+
+Por otra parte, las hojas de los exceles muestran lo siguiente:
+En la primer hoja estan los resultados de concentracion de P y N, así como maximos y dias de violacion del umbral ambiental.
+También estan los valores medios de los CE por hectarea en las rot 1 y 6 bajo dichos escenarios.
+
+Luego hay dos hojas con las variaciones brutas y porcentuales de los valores de la tabla anterior. Las variaciones
+se calculan de vuelta en base a los valores del escenario base. Esto sirve para calcular en el siguiente
+paso una pseudoelasticidad (en cada escenario) de los equivalentes ciertos a variaciones en la cantidad de nutrientes, 
+expresando el tradeoff entre ambiente y economía.
+
+Las elasticidades son las siguientes:
+-Elasticidad del CE a una variación de 1p.p en el promedio de la concentracion de nitrogeno.
+-Elasticidad del CE a una variación de 1p.p en el promedio de la concentracion de fosforo.
+-Elasticidad del CE a una variación de 1p.p en el valor maximo de la cantidad de nitrogeno.
+-Elasticidad del CE a una variación de 1p.p en el valor maximo de la cantidad  de fosforo.
+-Elasticidad del CE a una variación de 1p.p en la cantidad de dias que se violó el umbral de fosforo.
+-Elasticidad del CE a una variación de 1p.p en la cantidad de dias que se violó el umbral de nitrogeno.
+
+

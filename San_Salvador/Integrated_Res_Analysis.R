@@ -4,9 +4,13 @@
 
 rm(list=ls())
 
+
+
 library(tidyverse)
 
 setwd("C:/Users/Usuario/Desktop/Git/Tesis/San_Salvador")
+
+graphs_dir<-"C:/Users/Usuario/Desktop/Git/Tesis/San_Salvador/Resultados_x_Subcuenca"
 
 res_sub <-
 readRDS("Resultados_Ambientales/Subbasin_Env_Results_Scenarios.RDS")
@@ -71,6 +75,108 @@ res_sub  %>%
   summarise(N_v=sum(N_viol)/length(N_viol),
             P_v=sum(P_viol)/length(P_viol))
 
+#ECDF per scenario-----
+
+#result per subbasin in base scenario
+ggplot(res_sub %>% filter(scenario=="scbase"),
+       aes(P_Concentration)) +
+  stat_ecdf(geom="step")+
+  xlim(0, 0.025)+
+  facet_wrap(vars(subbasin))+
+  geom_hline(yintercept=0.5, col="red")+
+  theme(axis.text.x =element_text(angle=90,
+                                  hjust=1),
+        text = element_text(size=10))
+
+ggsave("Pcon_ECDF_subbasin_base.jpeg",
+       path = graphs_dir
+       #width =
+       #height =
+)  
+
+#result per subbasin in most intensive scenario
+ggplot(res_sub %>% filter(scenario=="sc9"),
+       aes(P_Concentration)) +
+  stat_ecdf(geom="step")+
+  xlim(0, 0.03)+
+  facet_wrap(vars(subbasin))+
+  geom_hline(yintercept=0.5, col="red")+
+  geom_vline(xintercept=0.025, col="red")
+
+ggsave("Pcon_ECDF_subbasin_intensive.jpeg",
+              path = graphs_dir
+              #width =
+              #height =
+       )  
+
+
+ggplot(res_sub %>% filter(scenario=="sc9") %>%
+         mutate(subbasin=as.character(subbasin)),
+       aes(P_Concentration, col=subbasin)) +
+  stat_ecdf(geom="step")+
+  xlim(0, 0.03)+
+  geom_hline(yintercept=0.5, col="red")+
+  geom_vline(xintercept=0.025, col="red")+
+  theme(axis.text.x =element_text(angle=90,
+                                  hjust=1),
+        text = element_text(size=10))
+
+
+ggsave("Pcon_Overlapped_ECDF_subbasin_intensive.jpeg",
+       path = graphs_dir
+       #width =
+       #height =
+)  
+
+ggplot(res_sub %>% filter(scenario=="scbase") %>%
+         mutate(subbasin=as.character(subbasin)),
+       aes(P_Concentration, col=subbasin)) +
+  stat_ecdf(geom="step")+
+  xlim(0, 0.03)+
+  geom_hline(yintercept=0.5, col="red")+
+  geom_vline(xintercept=0.025, col="red")+
+  theme(axis.text.x =element_text(angle=90,
+                                  hjust=1),
+        text = element_text(size=10))
+
+
+ggsave("Pcon_Overlapped_ECDF_subbasin_base.jpeg",
+       path = graphs_dir
+       #width =
+       #height =
+)  
+
+ggplot(res_sub %>% filter(scenario=="sc9") %>%
+         mutate(subbasin=as.character(subbasin)),
+       aes(N_Concentration, col=subbasin)) +
+  stat_ecdf(geom="step")+
+  xlim(0, 10)+
+  geom_hline(yintercept=0.5, col="red")+
+  geom_vline(xintercept=1, col="red")
+
+ggsave("Ncon_Overlapped_ECDF_subbasin_intensive.jpeg",
+       path = graphs_dir
+       #width =
+       #height =
+)  
+
+
+ggplot(res_sub %>% filter(scenario=="scbase") %>%
+         mutate(subbasin=as.character(subbasin)),
+       aes(N_Concentration, col=subbasin)) +
+  stat_ecdf(geom="step")+
+  xlim(0, 10)+
+  geom_hline(yintercept=0.5, col="red")+
+  geom_vline(xintercept=1, col="red")
+
+ggsave("Ncon_Overlapped_ECDF_subbasin_base.jpeg",
+       path = graphs_dir
+       #width =
+       #height =
+)  
+
+
+
 
 #Variations-------
 
@@ -82,10 +188,12 @@ res_sub  %>%
 
 res_sub_outlet <-
   res_sub %>% group_by(scenario) %>%
-  filter(channel==1) %>%
+  filter(subbasin==7) %>%
   summarise(n_mean=mean(N_Concentration),
+            n_median=median(N_Concentration),
             n_max=max(N_Concentration),
             p_mean=mean(P_Concentration),
+            p_median=median(P_Concentration),
             p_max=max(P_Concentration),
             n_viol=mean(N_viol),
             p_viol=mean(P_viol)) %>%
