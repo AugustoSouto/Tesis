@@ -94,6 +94,23 @@ ggsave("Pcon_ECDF_subbasin_base.jpeg",
        #height =
 )  
 
+ggplot(res_sub %>% filter(scenario=="scbase"),
+       aes(N_Concentration)) +
+  stat_ecdf(geom="step")+
+  xlim(0, 10)+
+  facet_wrap(vars(subbasin))+
+  geom_hline(yintercept=0.5, col="red")+
+  theme(axis.text.x =element_text(angle=90,
+                                  hjust=1),
+        text = element_text(size=10))
+
+ggsave("Ncon_ECDF_subbasin_base.jpeg",
+       path = graphs_dir
+       #width =
+       #height =
+)  
+
+
 #result per subbasin in most intensive scenario
 ggplot(res_sub %>% filter(scenario=="sc9"),
        aes(P_Concentration)) +
@@ -110,6 +127,21 @@ ggsave("Pcon_ECDF_subbasin_intensive.jpeg",
        )  
 
 
+ggplot(res_sub %>% filter(scenario=="sc9"),
+       aes(N_Concentration)) +
+  stat_ecdf(geom="step")+
+  xlim(0, 10)+
+  facet_wrap(vars(subbasin))+
+  geom_hline(yintercept=0.5, col="red")+
+  geom_vline(xintercept=1, col="red")
+
+ggsave("Ncon_ECDF_subbasin_intensive.jpeg",
+       path = graphs_dir
+       #width =
+       #height =
+)  
+
+
 ggplot(res_sub %>% filter(scenario=="sc9") %>%
          mutate(subbasin=as.character(subbasin)),
        aes(P_Concentration, col=subbasin)) +
@@ -123,9 +155,9 @@ ggplot(res_sub %>% filter(scenario=="sc9") %>%
 
 
 ggsave("Pcon_Overlapped_ECDF_subbasin_intensive.jpeg",
-       path = graphs_dir
-       #width =
-       #height =
+       path = graphs_dir,
+       width =8,
+       height =8
 )  
 
 ggplot(res_sub %>% filter(scenario=="scbase") %>%
@@ -141,9 +173,9 @@ ggplot(res_sub %>% filter(scenario=="scbase") %>%
 
 
 ggsave("Pcon_Overlapped_ECDF_subbasin_base.jpeg",
-       path = graphs_dir
-       #width =
-       #height =
+       path = graphs_dir,
+       width = 8,
+       height = 8
 )  
 
 ggplot(res_sub %>% filter(scenario=="sc9") %>%
@@ -155,9 +187,9 @@ ggplot(res_sub %>% filter(scenario=="sc9") %>%
   geom_vline(xintercept=1, col="red")
 
 ggsave("Ncon_Overlapped_ECDF_subbasin_intensive.jpeg",
-       path = graphs_dir
-       #width =
-       #height =
+       path = graphs_dir,
+       width = 8,
+       height = 8
 )  
 
 
@@ -170,12 +202,32 @@ ggplot(res_sub %>% filter(scenario=="scbase") %>%
   geom_vline(xintercept=1, col="red")
 
 ggsave("Ncon_Overlapped_ECDF_subbasin_base.jpeg",
-       path = graphs_dir
-       #width =
-       #height =
+       path = graphs_dir,
+       width = 8,
+       height = 8
 )  
 
+ggplot(res_sub %>% filter(scenario=="scbase") %>%
+         mutate(subbasin=as.character(yr)),
+       aes(P_Concentration, col=yr)) +
+  stat_ecdf(geom="step")+
+  xlim(0, 0.03)+
+  geom_hline(yintercept=0.5, col="red")+
+  geom_vline(xintercept=0.025, col="red")
 
+ggsave("Pcon_Overlapped_ECDF_yr_base.jpeg",
+       path = graphs_dir,
+       width = 8,
+       height = 8
+)  
+
+ggplot(res_sub %>% filter(scenario=="scbase", yr>2013) %>%
+         mutate(subbasin=as.character(yr)),
+       aes(P_Concentration, col=yr)) +
+  stat_ecdf(geom="step")+
+  xlim(0, 0.03)+
+  geom_hline(yintercept=0.5, col="red")+
+  geom_vline(xintercept=0.025, col="red")
 
 
 #Variations-------
