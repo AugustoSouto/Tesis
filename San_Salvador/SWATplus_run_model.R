@@ -23,8 +23,6 @@ scbase <- c("", "", "","", "", "" )
 scenarios <-
 rbind(sc1, sc2, sc3, sc4, sc5, sc6, sc7, sc8, sc9, scbase)
 
-scenarios <-
-  rbind(sc1, sc2, sc3, sc4, sc5, sc6, sc7, sc8, sc9, scbase)
 
 for (sc in 1:dim(scenarios)[1]) {
 
@@ -155,6 +153,7 @@ set_irrigation(scenario = scenarios[sc,])
 #4-Correr el modelo
 t1 <-Sys.time()
 shell.exec(paste0(model_files, "Rev59.3_64rel.exe"))
+print("post_shel_print")
 Sys.sleep(60*28) # poner un tiempo que asegure la ejecucion
 t2 <- Sys.time()
 tiempo_corrida<- t2-t1; tiempo_corrida
@@ -363,11 +362,12 @@ read_table2(paste0(model_files, "channel_sd_mon.txt"),
   mutate(Phosphorus=as.numeric(Phosphorus),
          Nitrogen=as.numeric(Nitrogen),
          flo_out=as.numeric(flo_out)) %>%
-  mutate(P_Concentration=(Phosphorus*1000000)/(flo_out*60*60*24*1000*30),
-         N_Concentration=(Nitrogen*1000000)/(flo_out*60*60*24*1000*30)
+  mutate(P_Concentration=(Phosphorus*1000000)/(flo_out*60*60*24*30*1000),
+         N_Concentration=(Nitrogen*1000000)/(flo_out*60*60*24*30*1000)
          )
-
-
+#ph and nit are in kg, so *1 million converts it into miligram
+#flow_out,is in m3/s, so we multiply by 60*60*24 to get daily results 
+#*
 t4 <- Sys.time()
 
 tiempo_procesamiento <- t4-t3; tiempo_procesamiento 
