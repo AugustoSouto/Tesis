@@ -26,6 +26,7 @@ for(scenario in scenarios){
     geom_histogram()+
     xlab("Area en Hectareas")+
     ylab("HRUs")
+    
   
   ggsave(paste0("area_plot_", str_remove( scenario, ".RData"), ".jpeg"),
          path = graphs_dir
@@ -81,7 +82,7 @@ hru_info2 %>% group_by(rotacion) %>% summarise(
     ylab("Mg/L") +
     geom_hline(aes(yintercept = N_lim,
                    colour="Normativa")) + 
-    ylim(0, 50) +
+    ylim(0, 20) +
     labs(color=NULL, x="Fecha", y="Mg/L")+
     ggtitle("Concentración de Nitrógeno")+
     scale_x_date(#date_labels = "%b%y", 
@@ -102,7 +103,10 @@ hru_info2 %>% group_by(rotacion) %>% summarise(
   ggplot(environmental_output %>%
            filter(channel==2) %>% 
            select( N_Concentration, date_env) , aes(x=N_Concentration))+
-    geom_histogram() 
+    geom_histogram()+
+    xlim(0,20)+
+    geom_vline(aes(xintercept = N_lim,
+                   colour="Normativa"))
 #    geom_vline(aes(xintercept = N_lim,
 #                   colour="Normativa")) 
   
@@ -125,7 +129,7 @@ hru_info2 %>% group_by(rotacion) %>% summarise(
     ylab("Mg/L") +
     geom_hline(aes(yintercept = Ph_lim,
                    colour="Normativa")) + 
-    ylim(0, 2) +
+    ylim(0, 0.050) +
     labs(color=NULL, x="Fecha", y="Mg/L")+
     ggtitle("Concentración de Fósforo")+
     scale_x_date(#date_labels = "%b%y", 
@@ -137,7 +141,8 @@ hru_info2 %>% group_by(rotacion) %>% summarise(
                                     hjust=1),
           text = element_text(size=7.5))
   
-  ggsave(paste0("Fosforo", str_remove( scenario, ".RData"), ".jpeg"),
+  
+ggsave(paste0("Fosforo", str_remove( scenario, ".RData"), ".jpeg"),
          path = graphs_dir
          #width =
          #height =
@@ -308,7 +313,7 @@ hru_info2 %>% group_by(rotacion) %>% summarise(
          #height =
   )  
   
-if(scenario!="SWAT_Sim_Without_Irrigation.RData"){
+if(scenario!="scbase.RData"){
   ggplot(profit_data %>% filter(irr_cost_ha>0) , aes(x=irr_cost_ha))+
     geom_histogram() +
     facet_wrap(~yr)
@@ -330,6 +335,7 @@ if(scenario!="SWAT_Sim_Without_Irrigation.RData"){
   )  
 }
     
+  
   
     hru_info %>% group_by(lu_mgt) %>% 
     summarise(area_rot=sum(area)) %>%

@@ -10,7 +10,7 @@ model_scripts<- "C:/Users/Usuario/Desktop/Git/Tesis/San_Salvador/"
 setwd(paste0(model_scripts, "Data_Simulaciones_SWAT"))
 
 scenarios <-
-list.files(pattern="RData"); scenarios
+list.files(pattern="sc"); scenarios
 
 for(scenario in scenarios){
   
@@ -20,10 +20,7 @@ setwd(paste0(model_scripts, "Data_Simulaciones_SWAT"))
 
 load(scenario)
 
-
-
 #environmental_output$P_Concentration
-
 
 #Env Output----
 #Use Channel two (2) output,
@@ -33,19 +30,17 @@ load(scenario)
 #Nitrogen Concentration Limit: 10 mg/L
 
 Ph_lim <- 0.25
-N_lim <- 10
-
-
+N_lim <- 1
 
 Excess_Days <-
 environmental_output %>% 
-filter(channel==2) %>%
+filter(channel==1) %>%
 mutate(P_excess=case_when(P_Concentration>=Ph_lim ~ 1,
                           P_Concentration<Ph_lim ~ 0),
        N_excess=case_when(N_Concentration>=N_lim ~ 1,
                           N_Concentration<N_lim ~ 0)
        ) %>% 
-select(P_excess, N_excess)  %>%
+dplyr::select(P_excess, N_excess)  %>%
 apply(2, function(x)round(sum(x)/(length(x)),2))   
 
 #Check if the environmental restictions are violated
@@ -136,7 +131,7 @@ risk_premium_ne <- function(profit_vector, rho=0.005){
 #Computing CE----
 
 hru_list <-
-  profit_data %>% select(hru) %>% unique() %>% 
+  profit_data %>% dplyr::select(hru) %>% unique() %>% 
   unlist() %>% as.list()
 
 #Ara parameters are defining using the range specified in 
@@ -209,13 +204,135 @@ save.image(paste0("Econ_Output_", scenario))
 
 
 }  
+s
+
+
+rm(list = ls())
+
+#profit time series----
+library(tidyverse)
+
+model_scripts<- "C:/Users/Usuario/Desktop/Git/Tesis/San_Salvador/"
+setwd(paste0(model_scripts, "Data_Simulaciones_SWAT"))
+
+scenarios <-
+  list.files(pattern="sc"); scenarios
+
+for(scenario in scenarios){
+  
+  print(scenario)  
+  
+  setwd(paste0(model_scripts, "Data_Simulaciones_SWAT"))
+  
+  load(scenario)
+  
+  profit_data <-
+    profit_data %>%
+    mutate(Rotacion_riego=case_when(lu_mgt=="agrc3_lum" ~ 1,
+                                    lu_mgt=="agrc4_lum" ~ 6,
+                                    lu_mgt!="agrc3_lum" & lu_mgt!="agrc4_lum" ~ 0),
+           scenario=str_remove(scenario, ".RData"))
+  
+  assign(paste0("profit_",str_remove(scenario, ".RData") %>% str_remove(scenario, "sc") ) ,
+         profit_data )
+  
+}
+
+#setwd("C:/Users/Usuario/Desktop/Git/Tesis/San_Salvador")
+sub_hru <-
+  readRDS("sub_hru.RDS")
+
+profit_data <-
+do.call(rbind,lapply(ls(pattern = "profit_sc"), get)) %>%
+  filter(Rotacion_riego==1 | Rotacion_riego==6) %>%
+  plyr::join( sub_hru, by="hru")
+
+  
+econ_stats_yr <-
+profit_data %>% 
+  group_by(scenario, yr) %>%
+  select(profit_hru, revenue, irr_cost, crop_cost_hru, hru, area) %>%
+   summarise(profit_yr=sum(profit_hru)/sum(area),
+             revenue_yr=sum(revenue)/sum(area),
+             irr_cost_yr=sum(irr_cost)/sum(area),
+             crop_cost_yr=sum(crop_cost_hru)/sum(area)) %>%
+  as.data.frame()
+
+econ_stats_yr %>% ggplot(aes(x=as.Date(ISOdate(yr,12,31)), y=profit_yr, col=scenario))+
+  geom_line()
+
+econ_stats_yr %>% ggplot(aes(x=as.Date(ISOdate(yr,12,31)),
+                             y=revenue_yr, col=scenario))+
+  geom_line()+
+  theme(axis.text.x =element_text(angle=90,
+                                  hjust=1),
+        text = element_text(size=7.5))+
+scale_x_date(#date_labels = "%b%y", 
+  date_breaks = "1 year"
+  #,
+  #date_labels = "%"
+)+
+xlab("Fecha")+ylab("Ingresos")
+  
 
 
 
-hru_info <-
-hru_info %>%
-mutate(Rotacion_riego=case_when(lu_mgt=="agrc3_lum" ~ 1,
-                                lu_mgt=="agrc4_lum" ~ 6,
-                                lu_mgt!="agrc3_lum" & lu_mgt!="agrc4_lum" ~ 0))
+econ_stats_yr %>% ggplot(aes(x=as.Date(ISOdate(yr,12,31)), y=crop_cost_yr, col=scenario))+
+  geom_line()+
+  theme(axis.text.x =element_text(angle=90,
+                                  hjust=1),
+        text = element_text(size=7.5))+
+  scale_x_date(#date_labels = "%b%y", 
+    date_breaks = "1 year"
+    #,
+    #date_labels = "%"
+  )+
+  xlab("Fecha")+ylab("Costos Fijos")
+
+econ_stats_yr %>% ggplot(aes(x=as.Date(ISOdate(yr,12,31)), y=irr_cost_yr, col=scenario))+
+  geom_line()+
+  theme(axis.text.x =element_text(angle=90,
+                                  hjust=1),
+        text = element_text(size=7.5))+
+  scale_x_date(#date_labels = "%b%y", 
+    date_breaks = "1 year"
+    #,
+    #date_labels = "%"
+  )+
+  xlab("Fecha")+ylab("Costos Riego")
+
+profit_data %>%
+ggplot(aes(x=as.Date(ISOdate(yr,12,31)), y=irr_cost_ha, 
+           col=as.factor(Rotacion_riego)))+
+geom_point()+
+facet_wrap(~scenario)
+
+profit_data %>%
+  ggplot(aes(x=as.Date(ISOdate(yr,12,31)), y=irr_cost_ha, 
+             col=as.factor(Subbasin)))+
+  geom_point()+
+  facet_wrap(~scenario)
+
+econ_stats_yr_sub <-
+  profit_data %>% 
+  group_by(scenario, yr, Subbasin) %>%
+  select(profit_hru, revenue, irr_cost, crop_cost_hru, hru, area) %>%
+  summarise(profit_yr=sum(profit_hru)/sum(area),
+            revenue_yr=sum(revenue)/sum(area),
+            irr_cost_yr=sum(irr_cost)/sum(area),
+            crop_cost_yr=sum(crop_cost_hru)/sum(area)) %>%
+  as.data.frame()
 
 
+econ_stats_yr_sub %>% ggplot(aes(x=as.Date(ISOdate(yr,12,31)), y=irr_cost_yr, col=scenario))+
+  geom_line()+
+  theme(axis.text.x =element_text(angle=90,
+                                  hjust=1),
+        text = element_text(size=7.5))+
+  scale_x_date(#date_labels = "%b%y", 
+    date_breaks = "1 year"
+    #,
+    #date_labels = "%"
+  )+
+  facet_wrap(~Subbasin)+
+  xlab("Fecha")+ylab("Costos Riego")

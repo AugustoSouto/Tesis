@@ -4,8 +4,6 @@
 
 rm(list=ls())
 
-
-
 library(tidyverse)
 
 setwd("C:/Users/Usuario/Desktop/Git/Tesis/San_Salvador")
@@ -41,6 +39,18 @@ hru_info <-
 
 subs <- 
   readRDS("C:/Users/Usuario/Desktop/Git/Tesis/San_Salvador/Resultados_Ambientales/subs.RDS")
+
+subbasin_map <-
+  rgdal::readOGR(dsn="C:/Users/Usuario/Desktop/SWATsept/SSalvador_LU2018_v0/Scenarios/Default/Results/subs.shp"
+                 #,
+                 #layer ="sub" 
+  )
+
+#genero otra columna igual para mergear en caso de que los nombres sean dif
+subbasin_map@data <-
+  subbasin_map@data %>% mutate(subbasin=Subbasin)
+
+subbasin_map %>% sp::plot()
 
 #######THRESHOLD VALUES FOR N AND P CONCENTRATION ON WATER ###########
 
@@ -333,6 +343,59 @@ porcentaje_rots %>%
 porcentaje_rots %>%
   arrange(desc(rot_6))
 
+subbasin_map@data <-
+merge(subbasin_map@data, porcentaje_rots, by="subbasin")
+
+subbasin_map %>% sp::plot()
+
+sub_map <-
+fortify(subbasin_map) %>%
+mutate(subbasin=as.numeric(id)+1, group=as.numeric(group)) %>%
+plyr::join(subbasin_map@data, by="subbasin")  
+
+tag<-
+  aggregate(cbind(long, lat)~id, 
+            data=fortify(subbasin_map) %>% mutate(id=as.numeric(id)+1, group=as.numeric(group)), function(x)mean(range(x)))
+
+r1y6<-
+ggplot()+
+geom_polygon(data=sub_map %>% mutate(Rotaciones_1y6=porc_regado*100), 
+             aes(x=long,y=lat,group=id,fill=Rotaciones_1y6))+
+geom_text(data = tag, aes(long, lat, label=id), size=4)+
+theme_void()+
+scale_fill_gradient(low="white", high="blue")  
+
+r1<-
+ggplot()+
+  geom_polygon(data=sub_map %>% mutate(Rotacion_1=rot_1*100), 
+               aes(x=long,y=lat,group=id,fill=Rotacion_1))+
+  geom_text(data = tag, aes(long, lat, label=id), size=4)+
+  theme_void()+
+  scale_fill_gradient(low="white", high="blue")  
+
+r6<-
+ggplot()+
+  geom_polygon(data=sub_map %>% mutate(Rotacion_6=rot_6*100), 
+               aes(x=long,y=lat,group=id,fill=Rotacion_6))+
+  geom_text(data = tag, aes(long, lat, label=id), size=4)+
+  theme_void()+
+  scale_fill_gradient(low="white", high="blue")  
+
+gridExtra::grid.arrange(r1, r6, ncol=2) %>% plot
+
+ggsave("Rot1_6.jpeg",
+       path = graphs_dir
+       #width =
+       #height =
+)  
+
+
+ggsave("Rot1y6.jpeg",
+       path = graphs_dir
+       #width =
+       #height =
+)
+
 #o sea, las cuencas con mas rot 1 y 6 son practicamente las mismas
 #la subcuenca 5 esta muy arriba pero es chica
 #la subcuenca 9 esta en la mitad norte de la cuenca mas o menos
@@ -344,8 +407,6 @@ ggplot(mat_nitro %>% filter(Escenario!="SC10") , aes(x=ARA, y=Escenario, fill=El
   theme(axis.text.x =element_text(angle=90,
                                   hjust=1),
         text = element_text(size=7.5))
-
-
 
 
 #All Subbasins Results------
@@ -430,3 +491,24 @@ for(i in 1:13){
   #write.xlsx(res_sub_outlet_porcent, paste0("Resultados_Subbasin_",i,".xlsx"), sheetName="res_var_por", append=TRUE)
   #write.xlsx(elasticidades, paste0("Resultados_Subbasin_",i,".xlsx"), sheetName="res_elasticidades", append=TRUE)
 }
+
+#Areas-----
+
+hru_info %>% 
+  #  filter(lu_mgt== "agrc3_lum" | "agrc4_lum" ) %>%
+  rename(rotacion=landuse) %>%
+  mutate(rotacion=case_when(rotacion=="agrc3_lum" ~ "Rotacion_1",
+                            rotacion=="agrc4_lum" ~ "Rotacion_6",
+                            rotacion!= "agrc3_lum" & rotacion!= "agrc4_lum" ~ "Otra")) %>%
+  ggplot(aes(area, after_stat(density), colour=rotacion))+
+  geom_freqpoly(binwidth=2)+
+  xlim(0,100)+
+  ylab("Densidad")+
+  xlab("Hectareas")
+
+ggsave("Areas_Dist.jpeg",
+       path = graphs_dir
+       #width =
+       #height =
+)  
+

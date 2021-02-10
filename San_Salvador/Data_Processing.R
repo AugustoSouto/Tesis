@@ -8,16 +8,16 @@ setwd(paste0(model_scripts, "Data_Simulaciones_SWAT"))
 
 
 scenarios <-
-  list.files(pattern="RData"); scenarios
+  list.files(pattern="sc"); scenarios
 
 t1 <- Sys.time()
 
 #Definir el costo de irrigacion con el que quiero procesar los datos
 #Irr_cost----
-irr_cost=0.65
+irr_cost <- 0.65
 
 scenarios <-
-  list.files(pattern="RData")
+  list.files(pattern="sc")
 
 for(s in scenarios){
   
@@ -59,13 +59,44 @@ for(s in scenarios){
   
   #corn 1ra
   #costs are measured in cost/ha (usd/ha)
+
+fert_high <- c("sc1.RData", "sc4.RData", "sc7.RData")
+fert_medium <- c("sc2.RData", "sc5.RData", "sc8.RData")
+fert_low <-  c("sc3.RData", "sc6.RData", "sc9.RData")
+fert_base <-  c("scbase.RData")
   
+if(scenario %in% fert_base){
   cost_corn <- 694
   cost_soyb <- 488
   cost_soy2 <- 395
   cost_oats <- 393
   cost_wheat <- 476
   cost_barley <- 539
+} else 
+  if(scenario %in% fert_high){
+    cost_corn <- 813
+    cost_soyb <- 512
+    cost_soy2 <- 412
+    cost_oats <- 459
+    cost_wheat <- 559
+    cost_barley <- 628
+  } else 
+    if(scenario %in% fert_medium){
+    cost_corn <- 773
+    cost_soyb <- 505
+    cost_soy2 <- 406
+    cost_oats <- 437
+    cost_wheat <- 531
+    cost_barley <- 599
+  } else
+     if(scenario %in% fert_low){
+    cost_corn <- 733
+    cost_soyb <- 497
+    cost_soy2 <- 401
+    cost_oats <- 415
+    cost_wheat <- 503
+    cost_barley <- 569
+  }
   
   #
   #yield is measured in kg/ha
@@ -81,8 +112,8 @@ for(s in scenarios){
                                crop== "barl" ~ p_barley,
                                crop== "corn" ~ p_corn,
                                crop== "oats" ~ p_oats)) %>%
-    select_at(vars(-ends_with(".y"))) %>%
-    rename(area=area.x) %>%
+     select_at(vars(-ends_with(".y"))) %>%
+    #rename(area=area.x) %>% #use this line if need to reprocess the data
     mutate(revenue=yield*area*price_ton/1000,
            revenue_ha=yield*price_ton/1000) ; head(output)
   
@@ -145,7 +176,7 @@ for(s in scenarios){
   
   print(s)
   t2
-  readline(prompt = "Press any key only if management scenarios are done and saved")
+  #readline(prompt = "Press any key only if management scenarios are done and saved")
   
   setwd(paste0(model_scripts, "Data_Simulaciones_SWAT"))
   
