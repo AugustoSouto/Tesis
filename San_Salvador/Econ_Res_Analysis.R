@@ -182,7 +182,7 @@ ceq_rp %>% select("HRU", "Rotacion_riego",contains("ce_ne")) %>%
   filter(Rotacion_riego!=0) %>% select(-c("HRU", "Rotacion_riego")) %>%
   apply(2, mean) %>% sort(decreasing = TRUE)
 
-rname <- paste0("ARA_",seq(0, 0.5, by=0.07)) %>% as.character()
+rname <- paste0("ARA_",seq(0, 0.05, by=0.007)) %>% as.character()
 
 cname <- c("Rot1y6_high", "Rot1y6_base", "Rot1y6_low",
            "Rot1_high", "Rot1_base", "Rot1_low",
@@ -228,7 +228,8 @@ library(scales)
 
 
 #HEATMAP SCENARIO&ARA----
-ggplot(resultados2 %>% filter(ARA!="ARA_0"), aes(x=ARA, y=Escenario, fill=CE))+
+ggplot(resultados2 %>% 
+         filter(ARA!="ARA_0" ), aes(x=ARA, y=Escenario, fill=CE))+
   geom_tile()+
   scale_fill_gradient(low = "yellow", high = "red", labels=comma)+
   theme(axis.text.x =element_text(angle=90,
@@ -242,7 +243,9 @@ ggsave("CE_Calor_ARA.jpeg",
 )
 
 #HEATMAP MEAN----
-ggplot(resultados_mean2 %>% filter(ARA!="ARA_0"), aes(x=ARA, y=Escenario, fill=CE))+
+ggplot(resultados_mean2 %>% 
+         filter( ARA!="ARA_0.042" & ARA!="ARA_0.049"),
+       aes(x=ARA, y=Escenario, fill=CE))+
   geom_tile()+
   scale_fill_gradient(low = "yellow", high = "red", labels=comma)+
   theme(axis.text.x =element_text(angle=90,
@@ -256,7 +259,8 @@ ggsave("CE_Calor_ARA_mean.jpeg",
 )
 
 #SCENARIO CE FACET-----
-ggplot(resultados2 %>% filter(ARA!="ARA_0") %>%
+ggplot(resultados2 %>% 
+         filter(ARA!="ARA_0.042" & ARA!="ARA_0.049") %>%
          mutate(ARA=str_remove(ARA, "ARA_")), aes(x=ARA, y=CE, col="red"))+
   geom_point()+
   facet_wrap(~Escenario, nrow=4, ncol=3)+
@@ -273,7 +277,8 @@ ggsave("CE_Cuenca_ARA.jpeg",
 )
 
 #SCENARIO MEAN CE FACET-----
-ggplot(resultados_mean2 %>% filter(ARA!="ARA_0") %>%
+ggplot(resultados_mean2 %>% 
+         filter(ARA!="ARA_0.042" & ARA!="ARA_0.049") %>%
          mutate(ARA=str_remove(ARA, "ARA_")), aes(x=ARA, y=CE, col="red"))+
   geom_point()+
   facet_wrap(~Escenario, nrow=4, ncol=3)+
@@ -290,7 +295,8 @@ ggsave("CE_Cuenca_ARA_mean.jpeg",
        )
 
 #ARA CE FACET-----
-ggplot(resultados2 %>% filter(ARA!="ARA_0") %>% mutate(ARA=str_remove(ARA, "ARA_")), 
+ggplot(resultados2 %>% 
+         filter(ARA!="ARA_0.042" & ARA!="ARA_0.049") %>% mutate(ARA=str_remove(ARA, "ARA_")), 
        aes(x=reorder(Escenario, -CE), y=CE, col=CE))+
   geom_point()+
   facet_wrap(~ARA, ncol=2, scales = "free_y")+
@@ -307,7 +313,8 @@ ggsave("CE_Cuenca_ARA2.jpeg",
 )
 
 #ARA CE MEAN FACET -----
-ggplot(resultados_mean2 %>% filter(ARA!="ARA_0") %>%
+ggplot(resultados_mean2 %>% 
+         filter(ARA!="ARA_0.042" & ARA!="ARA_0.049") %>%
          mutate(ARA=str_remove(ARA, "ARA_")), aes(x=reorder(Escenario,-CE), y=CE, col=CE))+
   geom_point()+
   facet_wrap(~ARA, ncol=2, scales = "free_y")+
@@ -346,20 +353,28 @@ data_ce %>% mutate(ARA=case_when(str_detect(Escenario, "ne_0.049") ~ "0.049",
                                  str_detect(Escenario, "ne_0.007") ~ "0.007",
                                  str_detect(Escenario, "ne_0") ~ "0")) %>%
 
-  mutate(Scenario=case_when(str_detect(Escenario, "sc1") ~ "sc1",
-                       str_detect(Escenario, "sc2") ~ "sc2",
-                       str_detect(Escenario, "sc3") ~ "sc3",
-                       str_detect(Escenario, "sc4") ~ "sc4",
-                       str_detect(Escenario, "sc5") ~ "sc5",
-                       str_detect(Escenario, "sc6") ~ "sc6",
-                       str_detect(Escenario, "sc7") ~ "sc7",
-                       str_detect(Escenario, "sc8") ~ "sc8",
-                       str_detect(Escenario, "sc9") ~ "sc9",
-                       str_detect(Escenario, "scbase") ~ "scbase")) %>%
+  mutate(Scenario=case_when(str_detect(Escenario, "sc1") ~ "Esc_1",
+                       str_detect(Escenario, "sc2") ~ "Esc_2",
+                       str_detect(Escenario, "sc3") ~ "Esc_3",
+                       str_detect(Escenario, "sc4") ~ "Esc_4",
+                       str_detect(Escenario, "sc5") ~ "Esc_5",
+                       str_detect(Escenario, "sc6") ~ "Esc_6",
+                       str_detect(Escenario, "sc7") ~ "Esc_7",
+                       str_detect(Escenario, "sc8") ~ "Esc_8",
+                       str_detect(Escenario, "sc9") ~ "Esc_9",
+                       str_detect(Escenario, "scbase") ~ "Esc_base")) %>%
   select(-Escenario) %>% rename(Escenario=Scenario)
                      
+data_ce <- data_ce %>%
+           mutate(Escenario=factor(Escenario, 
+                                  levels=c("Esc_1", "Esc_2",
+                                           "Esc_3", "Esc_4",
+                                           "Esc_5", "Esc_6",
+                                           "Esc_7", "Esc_8",
+                                           "Esc_9", "Esc_base"),
+                                  ordered = TRUE))
                         
-ggplot(data_ce  , aes(x=reorder(Escenario, -CE), y=CE))+
+ggplot(data_ce %>% filter(ARA!="0.049" & ARA!="0.042"), aes(x=Escenario, -CE), y=CE)+
   geom_boxplot()+
   facet_wrap(~ARA, ncol=2, scales = "free_y")+
   theme(axis.text.x =element_text(angle=90,
@@ -367,14 +382,15 @@ ggplot(data_ce  , aes(x=reorder(Escenario, -CE), y=CE))+
         text = element_text(size=10),
         legend.position="none") + labs(x="Escenario", y="CE")
 
-ggsave("CE_ARA_0.07_Boxplot.jpeg",
+ggsave("CE_dispersion.jpeg",
        path = graphs_dir
        ,
        width =6.84,
        height =8.5, limitsize = FALSE
 )
 
-ggplot(data_ce, aes(x=reorder(Escenario,-CE), y=CE))+
+ggplot(data_ce %>% filter(ARA!="0.049" & ARA!="0.042")
+         , aes(x=Escenario, y=CE))+
   geom_boxplot()+
   facet_wrap(~ARA, ncol=2, scales = "free_y")+
   theme(axis.text.x =element_text(angle=90,
@@ -383,7 +399,7 @@ ggplot(data_ce, aes(x=reorder(Escenario,-CE), y=CE))+
         legend.position="none") + labs(x="Escenario", y="CE")+
   scale_y_continuous(limits = quantile(data_ce$CE, c(0.01, 0.99)))
 
-ggsave("CE_ARA_Boxplot.jpeg",
+ggsave("CE_dispersion_2.jpeg",
        path = graphs_dir
        ,
        width =6.84,
@@ -408,7 +424,232 @@ saveRDS(resultados_mean, "C:/Users/Usuario/Desktop/Git/Tesis/San_Salvador/Res_Ec
 saveRDS(resultados_mean_1, "C:/Users/Usuario/Desktop/Git/Tesis/San_Salvador/Res_Econ_ha_1.RDS")
 saveRDS(resultados_mean_6, "C:/Users/Usuario/Desktop/Git/Tesis/San_Salvador/Res_Econ_ha_6.RDS")
 
+#Time Series----
 
+#profit time series----
+
+rm(list = ls())
+
+library(tidyverse)
+
+graphs_dir <- "C:/Users/Usuario/Desktop/Git/Tesis/San_Salvador/Graficos_Salidas"
+model_scripts<- "C:/Users/Usuario/Desktop/Git/Tesis/San_Salvador/"
+setwd(paste0(model_scripts, "Data_Simulaciones_SWAT"))
+
+scenarios <-
+  list.files(pattern="sc"); scenarios
+
+for(scenario in scenarios){
+  
+  print(scenario)  
+  
+  setwd(paste0(model_scripts, "Data_Simulaciones_SWAT"))
+  
+  load(scenario)
+  
+  profit_data <-
+    profit_data %>%
+    mutate(Rotacion_riego=case_when(lu_mgt=="agrc3_lum" ~ 1,
+                                    lu_mgt=="agrc4_lum" ~ 6,
+                                    lu_mgt!="agrc3_lum" & lu_mgt!="agrc4_lum" ~ 0),
+           scenario=str_remove(scenario, ".RData"))
+  
+  assign(paste0("profit_sc",str_remove(scenario, ".RData") %>% str_remove("sc") ) ,
+         profit_data )
+  
+}
+
+setwd("C:/Users/Usuario/Desktop/Git/Tesis/San_Salvador")
+
+sub_hru <-
+  readRDS("sub_hru.RDS")
+
+profit_data <-
+  do.call(rbind,lapply(ls(pattern = "profit_"), get)) %>%
+  filter(Rotacion_riego==1 | Rotacion_riego==6) %>%
+  plyr::join( sub_hru, by="hru") %>%
+  mutate(scenario=str_remove(scenario, "sc")) %>%
+  rename(Escenario=scenario)
+
+econ_stats_yr <-
+  profit_data %>% 
+  group_by(Escenario, yr) %>%
+  select(profit_hru, revenue, irr_cost, crop_cost_hru, hru, area) %>%
+  summarise(profit_yr=sum(profit_hru)/sum(area),
+            revenue_yr=sum(revenue)/sum(area),
+            irr_cost_yr=sum(irr_cost)/sum(area),
+            crop_cost_yr=sum(crop_cost_hru)/sum(area)) %>%
+  as.data.frame()
+
+econ_stats_yr_rot <-
+  profit_data %>% 
+  group_by(Escenario, yr, Rotacion_riego) %>%
+  select(profit_hru, revenue, irr_cost, crop_cost_hru, hru, area) %>%
+  summarise(profit_yr=sum(profit_hru)/sum(area),
+            revenue_yr=sum(revenue)/sum(area),
+            irr_cost_yr=sum(irr_cost)/sum(area),
+            crop_cost_yr=sum(crop_cost_hru)/sum(area)) %>%
+  as.data.frame()
+
+econ_stats_yr %>% ggplot(aes(x=as.Date(ISOdate(yr,12,31)), y=profit_yr, col=Escenario))+
+  geom_line()+
+  theme(axis.text.x =element_text(angle=90,
+                                  hjust=1),
+        text = element_text(size=7.5))+
+  scale_x_date(#date_labels = "%b%y", 
+    date_breaks = "1 year"
+    #,
+    #date_labels = "%"
+  )+
+  xlab("Fecha")+ylab("Beneficio Promedio")
+
+
+
+ggsave("Serie_Profits.jpeg",
+       path = graphs_dir,
+       width =6,
+       height =4
+)
+
+
+econ_stats_yr_rot %>% ggplot(aes(x=as.Date(ISOdate(yr,12,31)), y=profit_yr, col=Escenario))+
+  geom_line()+
+  facet_wrap(~Rotacion_riego)+
+  theme(axis.text.x =element_text(angle=90,
+                                  hjust=1),
+        text = element_text(size=7.5))+
+  scale_x_date(#date_labels = "%b%y", 
+    date_breaks = "1 year"
+    #,
+    #date_labels = "%"
+  )+
+  xlab("Fecha")+ylab("Beneficio Promedio")
+
+ggsave("Serie_Profits_rots.jpeg",
+       path = graphs_dir,
+       width =12,
+       height =4
+)
+
+econ_stats_yr %>% ggplot(aes(x=as.Date(ISOdate(yr,12,31)),
+                             y=revenue_yr, col=Escenario))+
+  geom_line()+
+  theme(axis.text.x =element_text(angle=90,
+                                  hjust=1),
+        text = element_text(size=7.5))+
+  scale_x_date(#date_labels = "%b%y", 
+    date_breaks = "1 year"
+    #,
+    #date_labels = "%"
+  )+
+  xlab("Fecha")+ylab("Ingreso Promedio")
+
+ggsave("Serie_Ingresos.jpeg",
+       path = graphs_dir,
+       width =6,
+       height =4
+)
+
+econ_stats_yr_rot %>% ggplot(aes(x=as.Date(ISOdate(yr,12,31)),
+                                 y=revenue_yr, col=Escenario))+
+  facet_wrap(~Rotacion_riego)+
+  geom_line()+
+  theme(axis.text.x =element_text(angle=90,
+                                  hjust=1),
+        text = element_text(size=7.5))+
+  scale_x_date(#date_labels = "%b%y", 
+    date_breaks = "1 year"
+    #,
+    #date_labels = "%"
+  )+
+  xlab("Fecha")+ylab("Ingreso Promedio")
+
+ggsave("Serie_Ingresos_rot.jpeg",
+       path = graphs_dir,
+       width =12,
+       height =4
+)
+
+
+econ_stats_yr %>% ggplot(aes(x=as.Date(ISOdate(yr,12,31)), y=crop_cost_yr, col=Escenario))+
+  geom_line()+
+  theme(axis.text.x =element_text(angle=90,
+                                  hjust=1),
+        text = element_text(size=7.5))+
+  scale_x_date(#date_labels = "%b%y", 
+    date_breaks = "1 year"
+    #,
+    #date_labels = "%"
+  )+
+  xlab("Fecha")+ylab("Costos Totales")#+
+#  theme(legend.position = "none")
+
+ggsave("Serie_CF_rot.jpeg",
+       path = graphs_dir,
+       width =6,
+       height =4
+)
+
+econ_stats_yr %>% ggplot(aes(x=as.Date(ISOdate(yr,12,31)), y=crop_cost_yr, col=Escenario))+
+  geom_line()+
+  theme(axis.text.x =element_text(angle=90,
+                                  hjust=1),
+        text = element_text(size=7.5))+
+  scale_x_date(#date_labels = "%b%y", 
+    date_breaks = "1 year"
+    #,
+    #date_labels = "%"
+  )+
+  xlab("Fecha")+ylab("Costos Fijos")
+
+econ_stats_yr %>% ggplot(aes(x=as.Date(ISOdate(yr,12,31)), y=irr_cost_yr, col=Escenario))+
+  geom_line()+
+  theme(axis.text.x =element_text(angle=90,
+                                  hjust=1),
+        text = element_text(size=7.5))+
+  scale_x_date(#date_labels = "%b%y", 
+    date_breaks = "1 year"
+    #,
+    #date_labels = "%"
+  )+
+  xlab("Fecha")+ylab("Costos Riego")
+
+profit_data %>% mutate(Rotacion_riego=as.factor(Rotacion_riego),
+                       yr=as.Date(ISOdate(yr,12,31))) %>%
+  ggplot(aes(x=yr, y=irr_cost_ha, 
+             col=Rotacion_riego))+
+  geom_point()+
+  facet_wrap(~Escenario)
+
+profit_data %>%
+  ggplot(aes(x=as.Date(ISOdate(yr,12,31)), y=irr_cost_ha, 
+             col=as.factor(Subbasin)))+
+  geom_point()+
+  facet_wrap(~Escenario)
+
+econ_stats_yr_sub <-
+  profit_data %>% 
+  group_by(Escenario, yr, Subbasin) %>%
+  select(profit_hru, revenue, irr_cost, crop_cost_hru, hru, area) %>%
+  summarise(profit_yr=sum(profit_hru)/sum(area),
+            revenue_yr=sum(revenue)/sum(area),
+            irr_cost_yr=sum(irr_cost)/sum(area),
+            crop_cost_yr=sum(crop_cost_hru)/sum(area)) %>%
+  as.data.frame()
+
+
+econ_stats_yr_sub %>% ggplot(aes(x=as.Date(ISOdate(yr,12,31)), y=irr_cost_yr, col=Escenario))+
+  geom_line()+
+  theme(axis.text.x =element_text(angle=90,
+                                  hjust=1),
+        text = element_text(size=7.5))+
+  scale_x_date(#date_labels = "%b%y", 
+    date_breaks = "1 year"
+    #,
+    #date_labels = "%"
+  )+
+  facet_wrap(~Subbasin)+
+  xlab("Fecha")+ylab("Costos Riego")
 
 
 

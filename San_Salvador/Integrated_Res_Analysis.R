@@ -403,7 +403,7 @@ ggsave("Rot1y6.jpeg",
 
 ggplot(mat_nitro %>% filter(Escenario!="SC10") , aes(x=ARA, y=Escenario, fill=Elasticidad))+
   geom_tile()+
-  scale_fill_gradient(low = "yellow", high = "red", labels=comma)+
+  scale_fill_gradient(low = "yellow", high = "red")+
   theme(axis.text.x =element_text(angle=90,
                                   hjust=1),
         text = element_text(size=7.5))
@@ -487,7 +487,7 @@ for(i in 1:13){
   
   #write_xlsx(sheets, "C:/Users/Usuario/Desktop/Git/Tesis/San_Salvador/Res_Econ_ha.RDS" )
   #write.xlsx(res_sub_outlet, file= paste0("Resultados_Subbasin_",i,".xlsx"), sheetName="resultados")
-  #write.xlsx(res_sub_outlet_brutas, paste0("Resultados_Subbasin_",i,".xlsx"),sheetName="res_var_brut", append=TRUE )
+  #write.xlsx(res_sub_okkutlet_brutas, paste0("Resultados_Subbasin_",i,".xlsx"),sheetName="res_var_brut", append=TRUE )
   #write.xlsx(res_sub_outlet_porcent, paste0("Resultados_Subbasin_",i,".xlsx"), sheetName="res_var_por", append=TRUE)
   #write.xlsx(elasticidades, paste0("Resultados_Subbasin_",i,".xlsx"), sheetName="res_elasticidades", append=TRUE)
 }

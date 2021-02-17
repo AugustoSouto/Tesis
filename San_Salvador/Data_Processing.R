@@ -28,8 +28,16 @@ for(s in scenarios){
   hru_info <- 
     plyr::join(areas, hrus_rotations, by="hru"); head(hru_info)
   
-  #Profit Computation----
+
+  output<-
+    output %>% as.data.frame() %>%
+    plyr::join(hru_info, by="hru")
   
+  output<-
+    output[,!duplicated(names(output))]
+  
+  
+  #Profit Computation----
   
   
   #Parameters(Prices and Costs)----
@@ -59,43 +67,61 @@ for(s in scenarios){
   
   #corn 1ra
   #costs are measured in cost/ha (usd/ha)
-
-fert_high <- c("sc1.RData", "sc4.RData", "sc7.RData")
-fert_medium <- c("sc2.RData", "sc5.RData", "sc8.RData")
-fert_low <-  c("sc3.RData", "sc6.RData", "sc9.RData")
-fert_base <-  c("scbase.RData")
   
-if(scenario %in% fert_base){
   cost_corn <- 694
   cost_soyb <- 488
   cost_soy2 <- 395
   cost_oats <- 393
   cost_wheat <- 476
-  cost_barley <- 539
-} else 
-  if(scenario %in% fert_high){
-    cost_corn <- 813
-    cost_soyb <- 512
-    cost_soy2 <- 412
-    cost_oats <- 459
-    cost_wheat <- 559
-    cost_barley <- 628
-  } else 
-    if(scenario %in% fert_medium){
-    cost_corn <- 773
-    cost_soyb <- 505
-    cost_soy2 <- 406
-    cost_oats <- 437
-    cost_wheat <- 531
-    cost_barley <- 599
-  } else
-     if(scenario %in% fert_low){
-    cost_corn <- 733
-    cost_soyb <- 497
-    cost_soy2 <- 401
-    cost_oats <- 415
-    cost_wheat <- 503
-    cost_barley <- 569
+  cost_barley <- 539  
+  
+
+fert_high <- c("sc1.RData", "sc4.RData", "sc7.RData")
+fert_medium <- c("sc2.RData", "sc5.RData", "sc8.RData")
+fert_low <-  c("sc3.RData", "sc6.RData", "sc9.RData")
+fert_base <-  c("scbase.RData")
+
+irr_1 <- c("sc4.RData", "sc5.RData", "sc6.RData")
+irr_6 <- c("sc7.RData", "sc8.RData", "sc9.RData")
+irr_1_6 <- c("sc1.RData", "sc2.RData", "sc3.RData")
+
+
+if(s %in% irr_1){
+  output <- output %>%  
+            mutate(rot_irr=ifelse(lu_mgt=="agrc3_lum",1,0)) 
+} else if(s %in% irr_6){
+  output <- output %>%  
+    mutate(rot_irr=ifelse(lu_mgt=="agrc4_lum",1,0))
+} else if(s %in% irr_1_6){
+  output <- output %>%
+  mutate(rot_irr=ifelse(lu_mgt=="agrc3_lum" | lu_mgt=="agrc4_lum",1,0))
+} else if(s %in% fert_base){
+  output <- output %>%
+            mutate(rot_irr=0)
+} 
+
+if(s %in% fert_high){
+    
+    cost_corn_irr <- 813
+    cost_soyb_irr <- 512
+    cost_soy2_irr <- 412
+    cost_oats_irr <- 459
+    cost_wheat_irr <- 559
+    cost_barley_irr <- 628
+  } else if(s %in% fert_medium){
+    cost_corn_irr <- 773
+    cost_soyb_irr <- 505
+    cost_soy2_irr <- 406
+    cost_oats_irr <- 437
+    cost_wheat_irr <- 531
+    cost_barley_irr <- 599
+  } else if(s %in% fert_low){
+    cost_corn_irr <- 733
+    cost_soyb_irr <- 497
+    cost_soy2_irr <- 401
+    cost_oats_irr <- 415
+    cost_wheat_irr <- 503
+    cost_barley_irr <- 569
   }
   
   #
@@ -104,9 +130,8 @@ if(scenario %in% fert_base){
   
   #Revenue=Price.Crop
   output<-
-    output %>% as.data.frame() %>%
-    dplyr::left_join(areas,by="hru") %>%
-    mutate(price_ton=case_when(crop== "soyb" |
+    output  %>%
+    mutate(price_ton=case_when(crop== "soyb" ~ p_soybean,
                                  crop== "soy2" ~ p_soybean,
                                crop== "wwht" ~ p_wheat,
                                crop== "barl" ~ p_barley,
@@ -118,15 +143,20 @@ if(scenario %in% fert_base){
            revenue_ha=yield*price_ton/1000) ; head(output)
   
   
-  
   output <-
     output %>%
-    mutate(crop_cost_ha=case_when(crop== "soyb" ~ cost_soyb,
-                                  crop== "soy2" ~ cost_soy2,
-                                  crop== "wwht" ~ cost_wheat,
-                                  crop== "barl" ~ cost_barley,
-                                  crop== "corn" ~ cost_corn,
-                                  crop== "oats" ~ cost_oats)) %>%
+    mutate(crop_cost_ha=case_when(crop== "soyb" & rot_irr==0 ~ cost_soyb,
+                                  crop== "soyb" & rot_irr==1 ~ cost_soyb_irr,
+                                  crop== "soy2" & rot_irr==0 ~ cost_soy2,
+                                  crop== "soy2" & rot_irr==1 ~ cost_soy2_irr,
+                                  crop== "wwht" & rot_irr==0 ~ cost_wheat,
+                                  crop== "wwht" & rot_irr==1 ~ cost_wheat_irr,
+                                  crop== "barl" & rot_irr==0 ~ cost_barley,
+                                  crop== "barl" & rot_irr==1 ~ cost_barley_irr,
+                                  crop== "corn" & rot_irr==0 ~ cost_corn,
+                                  crop== "corn" & rot_irr==1 ~ cost_corn_irr,
+                                  crop== "oats" & rot_irr==0 ~ cost_oats,
+                                  crop== "oats" & rot_irr==1 ~ cost_oats_irr)) %>%
     mutate(crop_cost_hru=crop_cost_ha*area,
            year=lubridate::year(date_end)) %>%
     relocate(year, .before=crop); head(output)  
