@@ -3,8 +3,11 @@ rm(list=ls())
 library(tidyverse)
 
 model_scripts<- "C:/Users/Usuario/Desktop/Git/Tesis/San_Salvador/"
+graphs_dir<-"C:/Users/Usuario/Desktop/Git/Tesis/San_Salvador/Resultados_x_Subcuenca"
 
 setwd(paste0(model_scripts, "Data_Simulaciones_Eco"))
+
+
 
 env_files <-
   list.files(pattern = "Env_Output_sc") %>% str_subset(pattern="RDS"); env_files
@@ -46,7 +49,11 @@ subbasin_map <-
                  #layer ="sub" 
   )
 
+#genero otra columna igual para mergear en caso de que los nombres sean dif
+subbasin_map@data <-
+  subbasin_map@data %>% mutate(subbasin=Subbasin)
 
+subbasin_map %>% sp::plot()
 
 library(RSQLite)
 
@@ -60,7 +67,6 @@ subbasins <-
   dbGetQuery(conn=con, statement=paste("SELECT * FROM '", tables[[99]], "'", sep=""))
 
 saveRDS(subbasins, "subbasins.RDS")
-
 
 library(raster)
 
@@ -100,12 +106,20 @@ subbasins <-
 dbGetQuery(conn=con, statement=paste("SELECT * FROM '", tables[[99]], "'", sep=""))
 
 
+
+
 #get the outlet channel for each subbasin
 subbasins_chan <-
 subbasins %>% group_by(subbasin) %>% top_n(1, areac) 
 
+subbasin_map@data <-
+merge(subbasin_map@data, subbasins, by="subbasin"  )
+
 subbasins_chan <-
 subbasins_chan %>%  dplyr::select(id, subbasin)
+
+subbasin_map@data <-
+merge(subbasin_map@data, subbasins_chan, by="subbasin")
 
 dbDisconnect(con)
 
@@ -121,12 +135,49 @@ summary(env_results)
 saveRDS(env_results,"Resultados_Ambientales/Subbasin_Env_Results_Scenarios.RDS")
 
 env_sum_stats <-
-env_results %>% group_by(scenario, subbasin) %>% 
+env_results %>%  group_by(scenario, subbasin) %>% 
   summarise(P=median(P_Concentration),
             N=median(N_Concentration),
             flo_out=median(flo_out),
             evap=median(evap),
             precip=median(precip)); env_sum_stats
+
+#precip:
+#1 mm es igual a 10 m/ha 
+#la salida esta en m/ha
+
+#uso escenario base, pero puede ser cualquier otro
+#los resultados son los mismos porque las precip
+#se caluibran con datos observados
+env_results %>% filter(subbasin==13, scenario=="scbase") %>%
+  group_by(yr,) %>%
+summarise(Precipitaciones=sum(precip)) %>%
+  mutate(Anio=factor(yr)) %>%
+  ggplot(aes(x=Anio, y=Precipitaciones))+
+  geom_bar(stat="identity")+
+theme(axis.text.x =element_text(angle=90,
+                                hjust=1),
+      text = element_text(size=12))+
+  xlab("Año") + ylab("Precipitaciones")
+
+ggsave("Precip.jpeg",
+       path = graphs_dir,
+       width = 6,
+       height =6,
+)  
+
+
+env_results %>% filter(subbasin==13) %>%
+  group_by(date_env) %>%
+  summarise(Precipitaciones=sum(precip)) %>%
+  mutate(Anio=factor(yr)) %>%
+  ggplot(aes(x=Anio, y=Precipitaciones))+
+  geom_bar(stat="identity")+
+  theme(axis.text.x =element_text(angle=90,
+                                  hjust=1),
+        text = element_text(size=12))+
+  xlab("Año") + ylab("Precipitaciones (mm)")
+
 
 env_sum_stats  %>%
   arrange(subbasin) %>% View

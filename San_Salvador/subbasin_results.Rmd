@@ -282,10 +282,17 @@ ggplot(irr_yr %>% filter(!is.na(Subbasin)), aes(x=scen, y=irr_cost/area))+
 # Precipitacion
 
 ```{r}
+
 plotly::ggplotly(
-ggplot(env_results %>% filter(scenario=="sc1") %>% filter(id==1) , aes(x=yr,y=precip))+
+ggplot(env_results %>%  mutate(precip=10*precip) %>% filter(subbasin==13, scenario=="scbase"),
+       aes(x=yr,y=precip))+
   geom_bar(stat="identity")+
-  coord_flip()
+  coord_flip()+
+  #+  facet_wrap(~estacion,scales = "free_y")+
+    theme(axis.text.x =element_text(angle=90,
+                                  hjust=1),
+        text = element_text(size=12))
+  
 )
 
 ```
@@ -293,7 +300,7 @@ ggplot(env_results %>% filter(scenario=="sc1") %>% filter(id==1) , aes(x=yr,y=pr
 ```{r}
 
 plotly::ggplotly(
-ggplot(env_results %>% mutate(estacion=case_when(mon=="1" | mon=="2" | mon=="3"~"Verano", mon=="4" | mon=="5" | mon=="6"~"Otonio", mon=="7" | mon=="8" | mon=="9"~"Invierno", mon=="10" | mon=="11" | mon=="12"~"Primavera" )) ,
+ggplot(env_results %>%  mutate(precip=10*precip) %>% filter(subbasin==13, scenario=="scbase") %>% mutate(estacion=case_when(mon=="1" | mon=="2" | mon=="3"~"Verano", mon=="4" | mon=="5" | mon=="6"~"Otonio", mon=="7" | mon=="8" | mon=="9"~"Invierno", mon=="10" | mon=="11" | mon=="12"~"Primavera" )) ,
        aes(x=yr,y=precip))+
   geom_bar(stat="identity")+
   facet_wrap(~estacion,scales = "free_y")+

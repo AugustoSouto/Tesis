@@ -344,7 +344,9 @@ irr_yr<-
 
 #5.7 Get Environmental P and N----
 
-#
+#precip:
+#1 mm es igual a 10 m/ha 
+#la salida esta en m/ha
 
 environmental_output <-
 read_table2(paste0(model_files, "channel_sd_mon.txt"),
@@ -366,7 +368,17 @@ read_table2(paste0(model_files, "channel_sd_mon.txt"),
          N_Concentration=(Nitrogen*1000000)/(flo_out*60*60*24*30*1000)
          )
 #ph and nit are in kg, so *1 million converts it into miligram
-#flow_out,is in m3/s, so we multiply by 60*60*24 to get daily results 
+#flow_out,is in m3/s, so we multiply by 60*60*24*30 to get monthly results 
+#*
+coso %>% 
+mutate(P_Concentration=(Phosphorus*1000000)/(flo_out*60*60*24*1000),
+       N_Concentration=(Nitrogen*1000000)/(flo_out*60*60*24*1000)
+) %>%
+group_by(channel_id) %>%  
+summarise(mean_p=median(P_Concentration),
+          mean_n=median(N_Concentration)
+          )
+#*
 #*
 t4 <- Sys.time()
 
