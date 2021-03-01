@@ -311,12 +311,24 @@ ggplot(aes(N_Concentration, col=Escenario)) +
   xlab("Concentracion de Nitrogeno (Mg/L)")+
   ylab("Probabilidad")
 
-stats::ecdf(
-            res_sub %>% filter(subbasin==13, scenario=="sc1") %>%
-            dplyr::select(N_Concentration)  
-            )
-
 ggsave("Ncon_Overlapped_ECDF_outlet.jpeg",
+       path = graphs_dir,
+       width = 8,
+       height = 8
+)  
+
+res_sub %>% filter(subbasin==13) %>%
+  mutate(subbasin=as.character(subbasin)) %>%
+  mutate(Escenario=str_remove(scenario, "sc")) %>%  
+  ggplot(aes(P_Concentration, col=Escenario)) +
+  stat_ecdf(geom="step")+
+  xlim(0, 0.03)+
+  geom_hline(yintercept=0.5, col="red")+
+  geom_vline(xintercept=0.025, col="red")+
+  xlab("Concentracion de Fosforo (Mg/L)")+
+  ylab("Probabilidad")
+
+ggsave("Pcon_Overlapped_ECDF_outlet.jpeg",
        path = graphs_dir,
        width = 8,
        height = 8
@@ -561,7 +573,7 @@ for(i in 1:13){
               n_max=max(N_Concentration),
               p_mean=mean(P_Concentration),
               p_max=max(P_Concentration),
-              n_median=median(P_Concentration),
+              n_median=median(N_Concentration),
               p_median=median(P_Concentration),
               n_viol=mean(N_viol),
               p_viol=mean(P_viol)) %>%
