@@ -81,9 +81,117 @@ res_sub %>%
 
 #See some subbasin values (across all scenarios)
 res_sub  %>%
-  group_by( subbasin) %>%
+mutate(Escenario=str_remove(scenario, "sc")) %>%
+  group_by(Escenario,subbasin) %>%
   summarise(N_v=sum(N_viol)/length(N_viol),
-            P_v=sum(P_viol)/length(P_viol))
+            N_mean=mean(N_Concentration),
+            N_median=median(N_Concentration),
+            N_Max=max(N_Concentration),
+            P_v=sum(P_viol)/length(P_viol),
+            P_mean=mean(P_Concentration),
+            P_median=median(P_Concentration),
+            P_Max=max(P_Concentration)
+            )
+
+res_sub   %>%
+  mutate(Escenario=str_remove(scenario, "sc"), 
+         subbasin=factor(subbasin)) %>%
+  ggplot(x= as.Date(ISOdate(date_env)),
+         y=P_Concentration,
+         col=subbasin)+
+  geom_line(aes(x=date_env, y=P_Concentration, col=subbasin))+
+  ylim(0,0.1) +
+  scale_x_date(date_breaks = "1 year")+
+  theme(axis.text.x =element_text(angle=90,hjust=1),
+        text = element_text(size=7.5))
+
+res_sub   %>% 
+mutate(estacion=case_when(mon=="1" | mon=="2" | mon=="3"~"Verano",
+                            mon=="4" | mon=="5" | mon=="6"~"Otonio",
+                            mon=="7" | mon=="8" | mon=="9"~"Invierno",
+                            mon=="10" | mon=="11" | mon=="12"~"Primavera" )) %>%
+mutate(Escenario=str_remove(scenario, "sc"), 
+         subbasin=factor(subbasin)) %>%
+  ggplot(x= as.Date(ISOdate(date_env)),
+         y=P_Concentration,
+         col=subbasin)+
+  geom_line(aes(x=date_env, y=P_Concentration, col=subbasin))+
+  ylim(0,0.1) +
+  scale_x_date(date_breaks = "1 year")+
+  theme(axis.text.x =element_text(angle=90,hjust=1),
+        text = element_text(size=7.5))+
+  facet_wrap(~mon)
+
+
+res_sub %>%
+mutate(estacion=case_when(mon=="1" | mon=="2" | mon=="3"~"Verano",
+                          mon=="4" | mon=="5" | mon=="6"~"Otonio",
+                          mon=="7" | mon=="8" | mon=="9"~"Invierno",
+                          mon=="10" | mon=="11" | mon=="12"~"Primavera" )) %>%
+mutate(Escenario=str_remove(scenario, "sc"), 
+       subbasin=factor(subbasin),
+       mon=factor(as.numeric(mon))) %>%
+  filter(Escenario=="base") %>%
+ggplot(x= as.Date(ISOdate(date_env)),
+       y= N_Concentration,
+         col=subbasin)+
+  geom_line(aes(x=date_env, y=N_Concentration, col=subbasin))+
+  ylim(0,40) +
+  scale_x_date(date_breaks = "1 year")+
+  theme(axis.text.x =element_text(angle=90,hjust=1),
+        text = element_text(size=7.5))+
+  facet_wrap(~estacion)
+
+res_sub   %>%
+  mutate(Escenario=str_remove(scenario, "sc"), 
+         subbasin=factor(subbasin),
+         outlet=ifelse(subbasin=="13","Salida","0tras Subcuencas")) %>%
+  filter(outlet=="Salida") %>%
+  ggplot()+
+  geom_line(aes(x=date_env, y=N_Concentration, col=Escenario))+
+  ylim(0,20) +
+  scale_x_date(date_breaks = "1 year")+
+  theme(axis.text.x =element_text(angle=90,hjust=1),
+        text = element_text(size=7.5))
+#  facet_wrap(~subbasin)
+
+ggsave("N_con_outlet.jpeg",
+       path = graphs_dir
+       #width =
+       #height =
+)  
+
+res_sub   %>%
+  mutate(Escenario=str_remove(scenario, "sc"), 
+         subbasin=factor(subbasin),
+         outlet=ifelse(subbasin=="13","Salida","0tras Subcuencas")) %>%
+  filter(outlet=="Salida", Escenario=="base") %>%
+  ggplot()+
+  geom_line(aes(x=date_env, y=P_Concentration))+
+  ylim(0,0.025) +
+  scale_x_date(date_breaks = "1 year")+
+  theme(axis.text.x =element_text(angle=90,hjust=1),
+        text = element_text(size=7.5))
+
+ggsave("P_con_outlet.jpeg",
+       path = graphs_dir
+       #width =
+       #height =
+)  
+
+res_sub   %>%
+mutate(Escenario=str_remove(scenario, "sc"), 
+       subbasin=factor(subbasin)) %>%
+ggplot(aes(x=Escenario,
+           y=N_Concentration,
+           col=subbasin))+
+geom_boxplot()+
+ylim(0,40) +
+#  scale_x_date(date_breaks = "1 year")+
+theme(axis.text.x =element_text(angle=90,hjust=1),
+      text = element_text(size=7.5))+
+facet_wrap(~mon)
+
 
 #ECDF per scenario-----
 
@@ -152,16 +260,20 @@ ggsave("Ncon_ECDF_subbasin_intensive.jpeg",
 )  
 
 
-ggplot(res_sub %>% filter(scenario=="sc9") %>%
-         mutate(subbasin=as.character(subbasin)),
-       aes(P_Concentration, col=subbasin)) +
+res_sub %>% #filter(scenario=="sc9") %>%
+  mutate(subbasin=as.character(subbasin),
+         Escenario= str_remove(scenario, "sc")) %>%
+  rename(subcuenca=subbasin) %>%
+  mutate(subcuenca=factor(as.numeric(subcuenca))) %>%
+ggplot(aes(P_Concentration, col=subcuenca)) +
   stat_ecdf(geom="step")+
   xlim(0, 0.03)+
   geom_hline(yintercept=0.5, col="red")+
   geom_vline(xintercept=0.025, col="red")+
   theme(axis.text.x =element_text(angle=90,
                                   hjust=1),
-        text = element_text(size=10))
+        text = element_text(size=10))+
+  facet_wrap(~Escenario)
 
 
 ggsave("Pcon_Overlapped_ECDF_subbasin_intensive.jpeg",
@@ -170,13 +282,13 @@ ggsave("Pcon_Overlapped_ECDF_subbasin_intensive.jpeg",
        height =8
 )  
 
-ggplot(res_sub %>% filter(scenario=="scbase") %>%
-         mutate(subbasin=as.character(subbasin)),
-       aes(P_Concentration, col=subbasin)) +
+res_sub %>% filter(scenario=="scbase") %>%
+  mutate(subbasin=as.character(subbasin)) %>%
+ggplot(aes(flo_out, col=subbasin)) +
   stat_ecdf(geom="step")+
-  xlim(0, 0.03)+
-  geom_hline(yintercept=0.5, col="red")+
-  geom_vline(xintercept=0.025, col="red")+
+#  xlim(0, 0.03)+
+#  geom_hline(yintercept=0.5, col="red")+
+#  geom_vline(xintercept=0.025, col="red")+
   theme(axis.text.x =element_text(angle=90,
                                   hjust=1),
         text = element_text(size=10))
@@ -188,20 +300,44 @@ ggsave("Pcon_Overlapped_ECDF_subbasin_base.jpeg",
        height = 8
 )  
 
-ggplot(res_sub %>% filter(scenario=="sc9") %>%
-         mutate(subbasin=as.character(subbasin)),
-       aes(N_Concentration, col=subbasin)) +
+res_sub %>% filter(subbasin==13) %>%
+mutate(subbasin=as.character(subbasin)) %>%
+mutate(Escenario=str_remove(scenario, "sc")) %>%  
+ggplot(aes(N_Concentration, col=Escenario)) +
   stat_ecdf(geom="step")+
   xlim(0, 10)+
   geom_hline(yintercept=0.5, col="red")+
-  geom_vline(xintercept=1, col="red")
+  geom_vline(xintercept=1, col="red")+
+  xlab("Concentracion de Nitrogeno (Mg/L)")+
+  ylab("Probabilidad")
 
-ggsave("Ncon_Overlapped_ECDF_subbasin_intensive.jpeg",
+stats::ecdf(
+            res_sub %>% filter(subbasin==13, scenario=="sc1") %>%
+            dplyr::select(N_Concentration)  
+            )
+
+ggsave("Ncon_Overlapped_ECDF_outlet.jpeg",
        path = graphs_dir,
        width = 8,
        height = 8
 )  
 
+res_sub %>% filter(subbasin==13) %>%
+  mutate(subbasin=as.character(subbasin)) %>%
+  mutate(Escenario=str_remove(scenario, "sc")) %>%  
+  ggplot(aes(P_Concentration, col=Escenario)) +
+  stat_ecdf(geom="step")+
+  xlim(0, 0.03)+
+  geom_hline(yintercept=0.5, col="red")+
+  geom_vline(xintercept=0.025, col="red")+
+  xlab("Concentracion de Fosforo (Mg/L)")+
+  ylab("Probabilidad")
+
+ggsave("Pcon_Overlapped_ECDF_outlet.jpeg",
+       path = graphs_dir,
+       width = 8,
+       height = 8
+)  
 
 ggplot(res_sub %>% filter(scenario=="scbase") %>%
          mutate(subbasin=as.character(subbasin)),
@@ -425,12 +561,14 @@ for(i in 1:13){
               n_max=max(N_Concentration),
               p_mean=mean(P_Concentration),
               p_max=max(P_Concentration),
+              n_median=median(P_Concentration),
+              p_median=median(P_Concentration),
               n_viol=mean(N_viol),
               p_viol=mean(P_viol)) %>%
     cbind(econ_ha %>% dplyr::select(-rn) %>% t()); res_sub_outlet
   
   
-  colnames(res_sub_outlet)[8:15] <- 
+  colnames(res_sub_outlet)[10:17] <- 
     paste0( "ARA_" , seq(0,0.049, by=0.007))
   
   res_sub_outlet_brutas<-
@@ -453,9 +591,9 @@ for(i in 1:13){
 
   
   elasticidades <-
-    apply(res_sub_outlet_porcent[,1:6],
+    apply(res_sub_outlet_porcent[,1:8],
           2,
-          function(x)(res_sub_outlet_porcent[,7:14]/x)
+          function(x)(res_sub_outlet_porcent[,9:16]/x)
     )
   
   model_scripts<- "C:/Users/Usuario/Desktop/Git/Tesis/San_Salvador/"
@@ -471,6 +609,8 @@ for(i in 1:13){
   openxlsx::addWorksheet(out, "elast_nmax")
   openxlsx::addWorksheet(out, "elast_pmean")
   openxlsx::addWorksheet(out, "elast_pmax")
+  openxlsx::addWorksheet(out, "elast_nmedian")
+  openxlsx::addWorksheet(out, "elast_pmedian")
   openxlsx::addWorksheet(out, "elast_nviol")
   openxlsx::addWorksheet(out, "elast_pviol")
   openxlsx::writeData(out, x=res_sub_outlet, sheet="Resultados")
@@ -480,8 +620,10 @@ for(i in 1:13){
   openxlsx::writeData(out,x=elasticidades[[2]],sheet="elast_nmax",startCol=1, startRow = row)
   openxlsx::writeData(out,x=elasticidades[[3]],sheet="elast_pmean",startCol=1, startRow = row)
   openxlsx::writeData(out,x=elasticidades[[4]],sheet="elast_pmax",startCol=1, startRow = row)
-  openxlsx::writeData(out,x=elasticidades[[5]],sheet="elast_nviol",startCol=1, startRow = row)
-  openxlsx::writeData(out,x=elasticidades[[6]],sheet="elast_pviol",startCol=1, startRow = row)
+  openxlsx::writeData(out,x=elasticidades[[5]],sheet="elast_nmedian",startCol=1, startRow = row)
+  openxlsx::writeData(out,x=elasticidades[[6]],sheet="elast_pmedian",startCol=1, startRow = row)
+  openxlsx::writeData(out,x=elasticidades[[7]],sheet="elast_nviol",startCol=1, startRow = row)
+  openxlsx::writeData(out,x=elasticidades[[8]],sheet="elast_pviol",startCol=1, startRow = row)
   
   openxlsx::saveWorkbook(out, paste0("Resultados_Subcuenca_",i,".xlsx"), overwrite = TRUE)
   
