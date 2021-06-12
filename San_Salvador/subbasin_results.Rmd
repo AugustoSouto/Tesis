@@ -160,6 +160,16 @@ irr_yr<-
   irr_yr %>% plyr::join(hru_info, by="hru")
 
 irr_yr %>% head
+
+
+irr_yr %>% 
+  ggplot(aes(y=irr_sum, x=yr))+
+  geom_boxplot()+
+  facet_wrap(~scen)+
+    theme(axis.text.x =element_text(angle=90,
+                                  hjust=1),
+        text = element_text(size=12))
+
 ```
 
 
@@ -229,26 +239,40 @@ ggplot(irr_yr %>% filter(!is.na(Subbasin)), aes(x=scen, y=irr_cost))+
 ```
 
 ```{r}
+
+ggplot(irr_yr %>% filter(!is.na(Subbasin)), aes(x=scen, y=irr_sum/area))+
+  geom_boxplot(outlier.shape = NA)+
+  facet_wrap(~Subbasin
+             #, scales = "free_y"
+             )+
+  theme(axis.text.x =element_text(angle=90,
+                                  hjust=1),
+        text = element_text(size=12))+
+  scale_y_continuous(limits=quantile(irr_yr$irr_sum/irr_yr$area, c(0.1, 0.9)))
+
 ggplot(irr_yr %>% filter(!is.na(Subbasin)), aes(x=scen, y=irr_sum/area))+
   geom_boxplot()+
   facet_wrap(~Subbasin, scales = "free_y")+
   theme(axis.text.x =element_text(angle=90,
                                   hjust=1),
-        text = element_text(size=12))
+        text = element_text(size=12))+
+scale_y_continuous(limits=quantile(irr_yr$irr_sum/irr_yr$area, c(0.1, 0.9)))
 
 ggplot(irr_yr %>% filter(!is.na(Subbasin)), aes(x=scen, y=irr_sum/area))+
   geom_boxplot()+
   facet_wrap(~yr,scales = "free_y")+
   theme(axis.text.x =element_text(angle=90,
                                   hjust=1),
-        text = element_text(size=12))
+        text = element_text(size=12))+
+scale_y_continuous(limits=quantile(irr_yr$irr_sum/irr_yr$area, c(0.1, 0.9)))
 
 ggplot(irr_yr %>% filter(!is.na(Subbasin)), aes(x=scen, y=irr_sum/area))+
   geom_boxplot()+
   facet_wrap(~Rotacion_riego, scales = "free_y")+
   theme(axis.text.x =element_text(angle=90,
                                   hjust=1),
-        text = element_text(size=12))
+        text = element_text(size=12))+
+scale_y_continuous(limits=quantile(irr_yr$irr_sum/irr_yr$area, c(0.1, 0.9)))
 ```
 
 ```{r}
