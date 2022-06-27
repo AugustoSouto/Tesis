@@ -6,7 +6,9 @@ rm(list = ls())
 #Load Data----
 library(tidyverse)
 
-model_scripts<- "C:/Users/Usuario/Desktop/Git/Tesis/San_Salvador/"
+
+model_scripts<- "/Users/augustosouto/Dropbox/Mac/Desktop/Git/Tesis/San_Salvador/"
+
 setwd(paste0(model_scripts, "Data_Simulaciones_SWAT"))
 
 scenarios <-
